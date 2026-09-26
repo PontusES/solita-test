@@ -14,6 +14,7 @@ function agentResult(answer: string, toolNames: string[]): AgentResult {
   return {
     answer,
     toolCalls: toolNames.map((name) => ({ name, args: {}, result: "ok", isError: false })),
+    guardrails: [],
     finishReason: "stop",
   };
 }

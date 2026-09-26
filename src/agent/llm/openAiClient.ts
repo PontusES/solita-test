@@ -1,14 +1,20 @@
 import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModelV4 } from "@ai-sdk/provider";
 import {
   jsonSchema,
   streamText,
   tool,
+  wrapLanguageModel,
   type JSONSchema7,
   type JSONValue,
-  type LanguageModel,
   type ModelMessage,
   type ToolSet,
 } from "ai";
+import {
+  createOutputGuardMiddleware,
+  createSecretRedactionMiddleware,
+} from "../../guardrails/middleware";
+import type { GuardrailNotice } from "../../guardrails/types";
 import type { ToolDefinition } from "../../tools/tool";
 import type { AgentMessage } from "../messages";
 import type { LlmClient, LlmStepEvent, LlmStepRequest } from "./llmClient";
@@ -66,15 +72,32 @@ function toToolSet(definitions: ToolDefinition[]): ToolSet {
 }
 
 export class OpenAiLlmClient implements LlmClient {
-  private readonly model: LanguageModel;
+  private readonly model: LanguageModelV4;
 
-  constructor(model: LanguageModel) {
+  constructor(model: LanguageModelV4) {
     this.model = model;
   }
 
   async *streamStep(req: LlmStepRequest): AsyncIterable<LlmStepEvent> {
-    const result = streamText({
+    // The guardrails are AI SDK middleware around the model, so they apply to every call no
+    // matter who makes it. They report through this list, which is emptied into the step's
+    // events; the model is wrapped per call so each request gets its own list.
+    const notices: GuardrailNotice[] = [];
+    const report = (notice: GuardrailNotice) => notices.push(notice);
+    const guardedModel = wrapLanguageModel({
       model: this.model,
+      // Applied outside in: secrets are redacted before the output guard sees the prompt.
+      middleware: [createSecretRedactionMiddleware(report), createOutputGuardMiddleware(report)],
+    });
+    function* drainNotices(): Generator<LlmStepEvent> {
+      while (notices.length > 0) {
+        const notice = notices.shift() as GuardrailNotice;
+        yield { type: "guardrail", ...notice };
+      }
+    }
+
+    const result = streamText({
+      model: guardedModel,
       instructions: req.system,
       messages: toModelMessages(req.messages),
       tools: toToolSet(req.tools),
@@ -84,6 +107,7 @@ export class OpenAiLlmClient implements LlmClient {
     });
 
     for await (const part of result.stream) {
+      yield* drainNotices();
       switch (part.type) {
         case "text-delta":
           yield { type: "text-delta", text: part.text };
@@ -107,6 +131,7 @@ export class OpenAiLlmClient implements LlmClient {
           throw new Error("LLM request aborted");
       }
     }
+    yield* drainNotices();
   }
 }
 

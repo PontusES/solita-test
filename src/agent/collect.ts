@@ -1,3 +1,4 @@
+import type { GuardrailNotice } from "../guardrails/types";
 import type { AgentEvent, TokenUsage } from "./events";
 
 export interface ToolCallTrace {
@@ -10,6 +11,7 @@ export interface ToolCallTrace {
 export interface AgentResult {
   answer: string;
   toolCalls: ToolCallTrace[];
+  guardrails: GuardrailNotice[];
   finishReason: "stop" | "max-steps";
   usage?: TokenUsage;
 }
@@ -21,6 +23,7 @@ export class AgentRunError extends Error {}
 export async function collect(events: AsyncIterable<AgentEvent>): Promise<AgentResult> {
   let answer = "";
   const toolCalls = new Map<string, ToolCallTrace>();
+  const guardrails: GuardrailNotice[] = [];
 
   for await (const event of events) {
     switch (event.type) {
@@ -43,10 +46,14 @@ export async function collect(events: AsyncIterable<AgentEvent>): Promise<AgentR
         }
         break;
       }
+      case "guardrail":
+        guardrails.push({ stage: event.stage, rule: event.rule, action: event.action });
+        break;
       case "done":
         return {
           answer,
           toolCalls: [...toolCalls.values()],
+          guardrails,
           finishReason: event.finishReason,
           usage: event.usage,
         };

@@ -222,6 +222,25 @@ describe("runAgent", () => {
     expect(events.at(-1)).toMatchObject({ type: "done", finishReason: "stop" });
   });
 
+  it("forwards guardrail notices once per run, even if several steps report them", async () => {
+    const secret: LlmStepEvent = {
+      type: "guardrail",
+      stage: "input",
+      rule: "secret",
+      action: "redacted",
+    };
+    const llm = new FakeLlmClient([
+      [secret, call("c1", "get_escalation_contact", { severity: "normal" }), finish],
+      [secret, text("Here is the contact."), finish],
+    ]);
+
+    const events = await run(llm);
+
+    expect(events.filter((event) => event.type === "guardrail")).toEqual([
+      { type: "guardrail", stage: "input", rule: "secret", action: "redacted" },
+    ]);
+  });
+
   it("emits an error event when the model call fails", async () => {
     const llm = new FakeLlmClient([]);
 

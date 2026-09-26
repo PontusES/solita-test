@@ -92,6 +92,8 @@ export async function* runAgent(
   const messages: AgentMessage[] = [{ role: "user", content: input.message }];
   const toolDefinitions = deps.tools.definitions();
   let usage: TokenUsage | undefined;
+  // Guardrails can fire on every model call; each distinct notice is reported once per run.
+  const reportedGuardrails = new Set<string>();
 
   try {
     for (let step = 0; step < deps.maxSteps; step++) {
@@ -117,6 +119,14 @@ export async function* runAgent(
           case "tool-call":
             toolCalls.push({ id: event.id, name: event.name, args: event.args });
             break;
+          case "guardrail": {
+            const key = `${event.stage}:${event.rule}:${event.action}`;
+            if (!reportedGuardrails.has(key)) {
+              reportedGuardrails.add(key);
+              yield event;
+            }
+            break;
+          }
           case "finish":
             usage = addUsage(usage, event.usage);
             break;

@@ -29,6 +29,9 @@ export async function respondWithAgentResult(message: string, request: Request):
       durationMs: Date.now() - startedAt,
       finishReason: result.finishReason,
       tools: result.toolCalls.map((call) => call.name),
+      guardrails: result.guardrails.map(
+        (notice) => `${notice.stage}:${notice.rule}:${notice.action}`,
+      ),
       usage: result.usage,
     });
     return Response.json(result, { headers: { "x-request-id": requestId } });

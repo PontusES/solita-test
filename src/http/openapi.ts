@@ -34,6 +34,7 @@ export const chatResponseExample = {
       isError: false,
     },
   ],
+  guardrails: [],
   finishReason: "stop",
   usage: { inputTokens: 1136, outputTokens: 109, totalTokens: 1245 },
 };
@@ -83,7 +84,8 @@ const streamDescription = `One Server-Sent Event per agent event, as \`event: <t
 
 - \`tool-call\`: \`{ id, name, args }\`
 - \`tool-result\`: \`{ id, name, result, isError }\`
-- \`text-delta\`: \`{ text }\`, a piece of the answer
+- \`guardrail\`: \`{ stage, rule, action }\`, a guardrail acted, for example \`{ stage: "input", rule: "secret", action: "redacted" }\`
+- \`text-delta\`: \`{ text }\`, a piece of the answer. Each block of answer text is checked by the output guardrails before it is sent, so it can arrive in one piece
 - \`done\`: \`{ finishReason, usage }\`, always the last event of a successful run
 - \`error\`: \`{ code: "${AGENT_FAILED_CODE}", message, requestId }\`, sent instead of \`done\` if the run fails
 

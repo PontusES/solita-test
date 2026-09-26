@@ -1,3 +1,4 @@
+import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
@@ -7,10 +8,7 @@ import type { AgentMessage } from "@/agent/messages";
 import { getEscalationContactTool } from "@/tools/getEscalationContact";
 import { ToolRegistry } from "@/tools/registry";
 
-// The chunk type lives in @ai-sdk/provider, which we do not depend on directly, so derive it
-// from the mock model instead.
-type MockStreamResult = Awaited<ReturnType<MockLanguageModelV4["doStream"]>>;
-type MockStreamPart = MockStreamResult["stream"] extends ReadableStream<infer Part> ? Part : never;
+type MockStreamPart = LanguageModelV4StreamPart;
 
 const finishPart: MockStreamPart = {
   type: "finish",

@@ -26,6 +26,14 @@ export const chatResponseSchema = z.object({
       isError: z.boolean(),
     }),
   ),
+  // What the guardrails did during the run, without the text they acted on.
+  guardrails: z.array(
+    z.object({
+      stage: z.enum(["input", "output"]),
+      rule: z.string(),
+      action: z.string(),
+    }),
+  ),
   finishReason: z.enum(["stop", "max-steps"]),
   usage: tokenUsageSchema.optional(),
 });

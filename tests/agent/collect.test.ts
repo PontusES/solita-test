@@ -35,6 +35,7 @@ describe("collect", () => {
           isError: false,
         },
       ],
+      guardrails: [],
       finishReason: "stop",
       usage,
     });

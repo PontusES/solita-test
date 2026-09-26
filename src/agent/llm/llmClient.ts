@@ -1,3 +1,4 @@
+import type { GuardrailNotice } from "../../guardrails/types";
 import type { ToolDefinition } from "../../tools/tool";
 import type { TokenUsage } from "../events";
 import type { AgentMessage } from "../messages";
@@ -5,6 +6,7 @@ import type { AgentMessage } from "../messages";
 export type LlmStepEvent =
   | { type: "text-delta"; text: string }
   | { type: "tool-call"; id: string; name: string; args: unknown }
+  | ({ type: "guardrail" } & GuardrailNotice)
   | { type: "finish"; usage?: TokenUsage };
 
 export interface LlmStepRequest {

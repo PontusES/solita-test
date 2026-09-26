@@ -41,6 +41,7 @@ export function createAgentEventStream(
   const encoder = new TextEncoder();
   const startedAt = Date.now();
   const toolNames: string[] = [];
+  const guardrails: string[] = [];
 
   function fail(controller: ReadableStreamDefaultController<Uint8Array>, message: string) {
     const fields = { durationMs: Date.now() - startedAt, error: message };
@@ -78,12 +79,16 @@ export function createAgentEventStream(
         if (event.type === "tool-call") {
           toolNames.push(event.name);
         }
+        if (event.type === "guardrail") {
+          guardrails.push(`${event.stage}:${event.rule}:${event.action}`);
+        }
         controller.enqueue(encoder.encode(encodeSseEvent(event)));
         if (event.type === "done") {
           logger.info("agent stream finished", {
             durationMs: Date.now() - startedAt,
             finishReason: event.finishReason,
             tools: toolNames,
+            guardrails,
             usage: event.usage,
           });
         }
