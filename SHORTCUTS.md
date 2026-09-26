@@ -2,11 +2,14 @@
 
 The 3 hour time cap was treated as the customer's budget. Work was prioritized so that whatever existed at any point was complete and working, and each priority was only started once the one before it was done:
 
-| Priority | Scope                                                                               | Status |
-| -------- | ----------------------------------------------------------------------------------- | ------ |
-| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built  |
-| P1       | OpenAPI spec and Swagger UI, eval runner                                            | Built  |
-| P2       | Prompt self-improver                                                                | Built  |
+| Priority  | Scope                                                                                   | Status |
+| --------- | --------------------------------------------------------------------------------------- | ------ |
+| P0        | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs     | Built  |
+| P1        | OpenAPI spec and Swagger UI, eval runner                                                | Built  |
+| P2        | Prompt self-improver                                                                    | Built  |
+| Extension | Guardrails and their joint prompt improvement, added after P2 at the customer's request | Built  |
+
+The guardrails extension goes beyond the original 3 hour budget; it was a deliberate choice to add it, not scope creep hidden inside P0 to P2.
 
 Everything below is a deliberate shortcut: what was done, why it is acceptable for this case, and what would come next with more time.
 
@@ -51,10 +54,22 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Evals
 
-- **A small eval set.** 13 cases (8 train, 5 holdout) is enough to catch regressions in the main behaviours, not to measure quality with statistical confidence. Next: grow it from real questions, with several paraphrases per intent.
+- **A small eval set.** 22 cases (13 train, 9 holdout, 9 of them for guardrails) is enough to catch regressions in the main behaviours, not to measure quality with statistical confidence. Next: grow it from real questions, with several paraphrases per intent.
 - **One run per case by default.** The model is not deterministic: the first baseline run happened to pass "Good morning!", but 5 runs showed it failing 3 times out of 5. `--runs n` averages this out at n times the cost. Next: run 3 to 5 times before accepting any prompt change.
 - **The judge is an LLM too.** Its scores vary and it can share blind spots with the agent, since both are OpenAI models. Hard requirements are therefore deterministic checks, and the judge only grades quality. Next: calibrate the judge on a handful of human graded answers, or use a judge from another provider.
 - **Tool arguments are not checked.** A case checks that `get_escalation_contact` was called and that the exact critical text appears, which implies the severity, but it does not inspect arguments directly. Next: argument level expectations.
+
+## Guardrails
+
+- **Secret detection is pattern based.** It catches the common shapes (a keyword like "password" followed by a value, well known key formats, card numbers that pass the Luhn check) and misses secrets with no recognisable shape, for example a bare password with no keyword. Next: a dedicated secret scanner or the company's DLP service.
+- **Only emails, URLs and phone numbers are checked for grounding.** Bare domains, names and office locations are not. A different path on a known domain counts as invented, which is strict on purpose. Next: extend the check to named entities that matter here, such as system names.
+- **Prompt leak detection only catches copies.** It looks for runs of 8 words copied from the system prompt. A paraphrased leak passes, and relies on the input classifier stopping "show me your instructions" first. Next: a canary token in the prompt, and an output classifier.
+- **No output content classifier.** Nothing checks answers for harmful or off brand content beyond the rules above, because the agent only answers from IT articles. Next: a moderation model on the output, in the same blocking mode.
+- **The classifier adds latency.** It runs before the agent, adding 0.85 to 1.5 seconds per request in the live test. Next: start the first agent step in parallel and cancel it if the classifier blocks.
+- **The classifier fails open.** On an error or timeout the request continues, visible as a `classifier-error` notice. This trades a window without injection detection for availability; the deterministic guardrails still apply. Next: alerting on the notice, and fail closed for higher risk tools if the agent ever gets tools that act.
+- **Answer text arrives per block, not per token.** Output checks hold each text block back until it is complete. Next: sentence level checks with overlapping context, if long answers make the delay noticeable.
+- **The refusals are fixed English texts.** Next: localised texts, and a way to report a wrong block.
+- **One model family everywhere.** The agent, the classifier, the judge and the optimizer are all OpenAI models, so they may share blind spots. Next: a classifier or judge from another provider.
 
 ## Prompt
 
@@ -66,8 +81,8 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 - **"Holdout must not drop" has no tolerance.** Round 3 of the committed run was rejected for a holdout drop from 1.000 to 0.987, which over 3 runs may be noise. A strict rule errs on the side of keeping a known good prompt, which is the right default for an artifact that changes production behaviour. Next: more runs per evaluation, or a tolerance based on the measured run to run variance.
 - **One candidate per round.** Each round asks for a single revision, so three rounds explore three ideas, and here all three were variations of the same one. Next: several candidates per round with different instructions, keeping the best that passes the acceptance rule.
 - **Candidate reports are summaries.** The `.json` next to each candidate has split scores, the decision and the regressed case ids, but not each case's failed checks. Diagnosing a regression means rerunning `npm run eval -- --prompt` on the candidate. Next: store the per case results as well.
-- **Small data, real cost.** One improver run is about 160 agent runs plus judge and optimizer calls, under $1 here, and still judged on only 13 cases. Next: a larger case set before letting the improver make decisions on its own.
-- **Same vendor everywhere.** Agent, judge and optimizer are all OpenAI models, so they may share blind spots. Next: a judge from a different provider.
+- **Small data, real cost.** One improver run with 22 cases is about 260 agent runs plus classifier, judge and optimizer calls, under $1 here, and still judged on a small case set. Next: a larger case set before letting the improver make decisions on its own.
+- **Both prompts in one candidate.** The optimizer may change the agent prompt and the guardrail prompt together, so an accepted pair could hide a regression in one behind an improvement in the other. The per case regression rule limits this, and the `.json` records which prompts changed. Next: accept changes to each prompt separately when both change.
 
 ## API docs
 
