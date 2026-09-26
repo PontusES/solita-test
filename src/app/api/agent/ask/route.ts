@@ -12,5 +12,5 @@ export async function GET(request: Request): Promise<Response> {
   if (!parsed.success) {
     return validationProblem(parsed.error);
   }
-  return respondWithAgentResult(parsed.data.q, request);
+  return respondWithAgentResult({ message: parsed.data.q }, request);
 }

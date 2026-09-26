@@ -3,7 +3,7 @@ import { INPUT_REFUSAL, type InputGuard } from "../guardrails/inputGuard";
 import type { ToolRegistry } from "../tools/registry";
 import type { AgentEvent, TokenUsage } from "./events";
 import type { LlmClient } from "./llm/llmClient";
-import type { AgentMessage, ToolCall, ToolResult } from "./messages";
+import type { AgentMessage, ConversationTurn, ToolCall, ToolResult } from "./messages";
 
 export interface AgentDeps {
   llm: LlmClient;
@@ -18,6 +18,8 @@ export interface AgentDeps {
 
 export interface AgentInput {
   message: string;
+  // Earlier turns, oldest first. Empty or missing for a first message.
+  history?: ConversationTurn[];
 }
 
 const ABORTED: AgentEvent = { type: "error", message: "Request aborted" };
@@ -93,7 +95,14 @@ export async function* runAgent(
   deps: AgentDeps,
   signal: AbortSignal,
 ): AsyncGenerator<AgentEvent> {
-  const messages: AgentMessage[] = [{ role: "user", content: input.message }];
+  const messages: AgentMessage[] = [
+    ...(input.history ?? []).map((turn): AgentMessage =>
+      turn.role === "user"
+        ? { role: "user", content: turn.content }
+        : { role: "assistant", text: turn.content, toolCalls: [] },
+    ),
+    { role: "user", content: input.message },
+  ];
   const toolDefinitions = deps.tools.definitions();
   let usage: TokenUsage | undefined;
   // Guardrails can fire on every model call; each distinct notice is reported once per run.

@@ -20,11 +20,14 @@ describe("buildOpenApiSpec", () => {
   });
 
   it("derives the request schema from the validation schema the route uses", () => {
-    expect(spec.components.schemas.ChatRequest).toEqual({
-      type: "object",
-      properties: { message: { type: "string", minLength: 1, maxLength: 2000 } },
-      required: ["message"],
-    });
+    const schema = spec.components.schemas.ChatRequest as {
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    expect(schema.properties.message).toEqual({ type: "string", minLength: 1, maxLength: 2000 });
+    // history has a default, so in the input direction it is optional.
+    expect(schema.required).toEqual(["message"]);
+    expect(schema.properties.history).toMatchObject({ type: "array", maxItems: 20 });
   });
 
   it("leaves the JSON Schema dialect key out of the embedded schemas", () => {

@@ -36,7 +36,11 @@ async function runOnce(evalCase: EvalCase, deps: AgentDeps, judge: Judge): Promi
   let result;
   try {
     result = await collect(
-      runAgent({ message: evalCase.input }, deps, new AbortController().signal),
+      runAgent(
+        { message: evalCase.input, history: evalCase.history },
+        deps,
+        new AbortController().signal,
+      ),
     );
   } catch (error) {
     // One failing case must not abort the whole eval; it simply scores 0.

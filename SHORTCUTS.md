@@ -26,8 +26,8 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Scope
 
-- **Single turn only.** Each request is answered on its own; the user cannot ask a follow-up. The agent's internal message format already supports history. Next: a conversation id, a history store, and trimming of old turns.
-- **No persisted conversations.** Nothing is saved after the response. Next: store conversations for support follow-up and for building eval cases from real traffic.
+- **The client holds the conversation.** The server is stateless, so every request carries up to 20 earlier turns, and a long conversation costs more tokens per message and drops its oldest turns. The history is not signed, so a client can rewrite earlier assistant answers; that only affects its own session, and tool results are never accepted from clients. Next: server side conversations with an id, a store such as Redis or Postgres, and summarising old turns instead of dropping them.
+- **No persisted conversations.** Nothing is saved on the server, and a reload of the chat page starts over. Next: store conversations for support follow up and for building eval cases from real traffic.
 
 ## Observability
 
@@ -63,7 +63,7 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 - **Answers are shown as plain text.** The model writes Markdown, so `**bold**` and list markers show as typed. Next: a Markdown renderer with HTML disabled, which is a new dependency.
 - **No component tests.** The page's event handling is a pure function with unit tests, and the stream parser is shared with the route tests, but the React component itself was only checked by hand against the live server. Next: Playwright against `next start` with the fake container.
-- **One message at a time, with no history.** It mirrors the single turn API. Next: follows the conversation support under Scope.
+- **No retry on a network error.** A request that fails before any response (seen once through WSL's localhost forwarding) shows "Failed to fetch" and has to be sent again. Next: retry once automatically, which is safe because both tools only read.
 
 ## Guardrails
 
@@ -71,6 +71,7 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 - **Only emails, URLs and phone numbers are checked for grounding.** Bare domains, names and office locations are not. A different path on a known domain counts as invented, which is strict on purpose. Next: extend the check to named entities that matter here, such as system names.
 - **Prompt leak detection only catches copies.** It looks for runs of 8 words copied from the system prompt. A paraphrased leak passes, and relies on the input classifier stopping "show me your instructions" first. Next: a canary token in the prompt, and an output classifier.
 - **No output content classifier.** Nothing checks answers for harmful or off brand content beyond the rules above, because the agent only answers from IT articles. Next: a moderation model on the output, in the same blocking mode.
+- **The classifier sees only the newest message.** Earlier messages were checked when they were sent, but an attack split across several harmless looking turns would pass it; the output checks still apply. Next: give the classifier the last few turns as context.
 - **The classifier adds latency.** It runs before the agent, adding 0.85 to 1.5 seconds per request in the live test. Next: start the first agent step in parallel and cancel it if the classifier blocks.
 - **The classifier fails open.** On an error or timeout the request continues, visible as a `classifier-error` notice. This trades a window without injection detection for availability; the deterministic guardrails still apply. Next: alerting on the notice, and fail closed for higher risk tools if the agent ever gets tools that act.
 - **Answer text arrives per block, not per token.** Output checks hold each text block back until it is complete. Next: sentence level checks with overlapping context, if long answers make the delay noticeable.

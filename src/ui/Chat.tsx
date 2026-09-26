@@ -5,6 +5,7 @@ import { createSseParser } from "../http/sseParser";
 import {
   applyStreamEvent,
   describeSearchResult,
+  toHistory,
   type Exchange,
   type TimelineItem,
 } from "./chatState";
@@ -38,6 +39,8 @@ export function Chat() {
     const message = question.trim();
     if (!message || busy) return;
     const id = Date.now();
+    // Taken before the new exchange is added, so it holds only the earlier turns.
+    const history = toHistory(exchanges);
     setExchanges((all) => [...all, { id, question: message, items: [], status: "streaming" }]);
     setInput("");
     const controller = new AbortController();
@@ -47,7 +50,7 @@ export function Chat() {
       const response = await fetch("/api/agent/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, history }),
         signal: controller.signal,
       });
       if (!response.ok || !response.body) {
@@ -105,10 +108,22 @@ export function Chat() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-6">
       <header>
-        <h1 className="text-2xl font-semibold">IT Helpdesk Agent</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">IT Helpdesk Agent</h1>
+          {exchanges.length > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setExchanges([])}
+              className="rounded border border-zinc-300 px-3 py-1 text-sm disabled:opacity-40 dark:border-zinc-700"
+            >
+              New conversation
+            </button>
+          )}
+        </div>
         <p className="text-sm text-zinc-500">
-          Streams the agent&apos;s events live from <code>/api/agent/chat/stream</code>. Every
-          message is answered on its own: the API is single turn and keeps no history.{" "}
+          Streams the agent&apos;s events live from <code>/api/agent/chat/stream</code>. The
+          conversation lives in this page and is sent with every message; the server keeps no state.{" "}
           <a className="underline" href="/docs">
             API docs
           </a>

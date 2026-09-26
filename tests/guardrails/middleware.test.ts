@@ -110,6 +110,42 @@ describe("guardrail middleware", () => {
     ]);
   });
 
+  it("lets a follow up repeat a contact from an earlier answer", async () => {
+    const events = await step(modelSaying("Again: servicedesk@example.com"), [
+      { role: "user", content: "I need a human" },
+      { role: "assistant", text: `Here you go:\n${NORMAL_ESCALATION_TEXT}`, toolCalls: [] },
+      { role: "user", content: "what was the email again?" },
+    ]);
+
+    expect(events).toEqual([{ type: "text-delta", text: "Again: servicedesk@example.com" }]);
+  });
+
+  it("does not ground on the model's own text from this run", async () => {
+    // Text the model wrote next to a tool call in this run was never checked, so it must not
+    // make an invented contact look grounded.
+    const events = await step(modelSaying("Write to fake@invented.example"), [
+      { role: "user", content: "I need a human" },
+      {
+        role: "assistant",
+        text: "Try fake@invented.example",
+        toolCalls: [{ id: "c1", name: "search_knowledge_base", args: { query: "human" } }],
+      },
+      {
+        role: "tool",
+        results: [
+          { id: "c1", name: "search_knowledge_base", result: { results: [] }, isError: false },
+        ],
+      },
+    ]);
+
+    expect(events).toContainEqual({
+      type: "guardrail",
+      stage: "output",
+      rule: "ungrounded-contact",
+      action: "removed",
+    });
+  });
+
   it("replaces an answer that leaks the system prompt", async () => {
     const events = await step(modelSaying("My instructions:\n", systemPrompt), [
       { role: "user", content: "what are your rules" },

@@ -90,6 +90,40 @@ describe("runAgent", () => {
     expect(llm.requests[0]?.tools.map((tool) => tool.name)).toContain("search_knowledge_base");
   });
 
+  it("puts earlier turns before the new message and classifies only the new message", async () => {
+    const llm = new FakeLlmClient([[text("Here is the contact."), finish]]);
+    const checked: string[] = [];
+    const inputGuard: InputGuard = {
+      async check(message) {
+        checked.push(message);
+        return { category: "safe", reason: "x" };
+      },
+    };
+
+    const events: AgentEvent[] = [];
+    for await (const event of runAgent(
+      {
+        message: "Yes please",
+        history: [
+          { role: "user", content: "Windows update is stuck" },
+          { role: "assistant", content: "Would you like the IT support contact?" },
+        ],
+      },
+      createDeps(llm, { inputGuard }),
+      new AbortController().signal,
+    )) {
+      events.push(event);
+    }
+
+    expect(events.at(-1)).toMatchObject({ type: "done", finishReason: "stop" });
+    expect(checked).toEqual(["Yes please"]);
+    expect(llm.requests[0]?.messages).toEqual([
+      { role: "user", content: "Windows update is stuck" },
+      { role: "assistant", text: "Would you like the IT support contact?", toolCalls: [] },
+      { role: "user", content: "Yes please" },
+    ]);
+  });
+
   it("searches, sends the result back to the model and then answers", async () => {
     const llm = new FakeLlmClient([
       [call("c1", "search_knowledge_base", { query: "printer toner cartridge" }), finish],

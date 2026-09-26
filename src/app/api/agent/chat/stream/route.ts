@@ -10,10 +10,11 @@ export const runtime = "nodejs";
 const fallbackLogger = createLogger({ service: "it-helpdesk-agent" });
 
 export async function POST(request: Request): Promise<Response> {
-  const input = await readChatRequest(request);
-  if (!input.ok) {
-    return input.response;
+  const body = await readChatRequest(request);
+  if (!body.ok) {
+    return body.response;
   }
+  const { input } = body;
 
   const requestId = crypto.randomUUID();
 
@@ -34,9 +35,10 @@ export async function POST(request: Request): Promise<Response> {
   logger.info("agent stream started", {
     path: new URL(request.url).pathname,
     messageLength: input.message.length,
+    historyLength: input.history.length,
   });
 
-  const events = runAgent({ message: input.message }, container.agentDeps, request.signal);
+  const events = runAgent(input, container.agentDeps, request.signal);
   const stream = createAgentEventStream(events, { requestId, logger, signal: request.signal });
   return new Response(stream, { headers: { ...SSE_HEADERS, "x-request-id": requestId } });
 }

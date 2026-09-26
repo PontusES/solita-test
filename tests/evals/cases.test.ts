@@ -26,6 +26,15 @@ describe("evalCases", () => {
     }
   });
 
+  it("writes follow up histories as alternating turns, ending with the assistant", () => {
+    const followUps = evalCases.filter((evalCase) => evalCase.history);
+    expect(followUps.length).toBeGreaterThan(0);
+    for (const { history = [] } of followUps) {
+      history.forEach((turn, i) => expect(turn.role).toBe(i % 2 === 0 ? "user" : "assistant"));
+      expect(history.at(-1)?.role).toBe("assistant");
+    }
+  });
+
   it("checks escalation answers against the exact tool texts", () => {
     const required = evalCases.flatMap((evalCase) => evalCase.expect.mustContain ?? []);
     expect(required.length).toBeGreaterThan(0);

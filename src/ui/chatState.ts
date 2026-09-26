@@ -1,4 +1,9 @@
 import type { FinishReason, TokenUsage } from "../agent/events";
+import {
+  MAX_ASSISTANT_TURN_LENGTH,
+  MAX_HISTORY_MESSAGES,
+  type ConversationTurn,
+} from "../agent/messages";
 import type { GuardrailNotice } from "../guardrails/types";
 import type { ParsedSseEvent } from "../http/sseParser";
 
@@ -102,4 +107,27 @@ export function describeSearchResult(result: unknown): { title: string; score: n
     title: String(hit.title ?? ""),
     score: Number(hit.score ?? 0),
   }));
+}
+
+export function answerText(exchange: Exchange): string {
+  return exchange.items
+    .flatMap((item) => (item.kind === "text" ? [item.text] : []))
+    .join("")
+    .trim();
+}
+
+// The earlier turns to send with the next message. The server keeps no state, so the page
+// holds the conversation. Only finished exchanges with an answer count, and blocked ones are
+// left out, so a refused attack is not replayed to the model on every later message.
+export function toHistory(exchanges: Exchange[]): ConversationTurn[] {
+  const turns = exchanges.flatMap((exchange): ConversationTurn[] => {
+    const answer = answerText(exchange);
+    if (exchange.status !== "done" || exchange.finishReason === "blocked" || !answer) return [];
+    return [
+      { role: "user", content: exchange.question },
+      { role: "assistant", content: answer.slice(0, MAX_ASSISTANT_TURN_LENGTH) },
+    ];
+  });
+  // Keep the most recent turns within the server's limit.
+  return turns.slice(-MAX_HISTORY_MESSAGES);
 }

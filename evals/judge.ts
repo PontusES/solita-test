@@ -44,7 +44,11 @@ export function buildJudgePrompt({ evalCase, result }: JudgeInput): string {
 
   return `<case>
 <rubric>${evalCase.rubric}</rubric>
-<user_message>${evalCase.input}</user_message>
+${
+  evalCase.history?.length
+    ? `<earlier_turns>\n${evalCase.history.map((turn) => `${turn.role}: ${turn.content}`).join("\n")}\n</earlier_turns>\n`
+    : ""
+}<user_message>${evalCase.input}</user_message>
 <tool_calls>
 ${trace}
 </tool_calls>

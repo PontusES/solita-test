@@ -1,9 +1,25 @@
 import { z } from "zod";
+import { MAX_ASSISTANT_TURN_LENGTH, MAX_HISTORY_MESSAGES } from "../agent/messages";
 
 export const userMessageSchema = z.string().trim().min(1).max(2000);
 
+const historyTurnSchema = z.discriminatedUnion("role", [
+  z.object({ role: z.literal("user"), content: userMessageSchema }),
+  z.object({
+    role: z.literal("assistant"),
+    content: z.string().trim().min(1).max(MAX_ASSISTANT_TURN_LENGTH),
+  }),
+]);
+
 export const chatRequestSchema = z.object({
   message: userMessageSchema,
+  history: z
+    .array(historyTurnSchema)
+    .max(MAX_HISTORY_MESSAGES)
+    .default([])
+    .describe(
+      "Earlier turns of the conversation, oldest first, as text. The server keeps no state, so the client sends them with every request.",
+    ),
 });
 
 export const askQuerySchema = z.object({

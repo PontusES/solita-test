@@ -42,10 +42,16 @@ function toolOutputText(output: LanguageModelV4ToolResultOutput): string {
   return "value" in output ? JSON.stringify(output.value) : "";
 }
 
-// What the model was allowed to know: tool results and what the user wrote.
+// What the model was allowed to know: tool results, what the user wrote, and its own answers
+// from earlier turns, so a follow up may repeat a contact it was given before.
 function groundingSources(prompt: LanguageModelV4Prompt): string[] {
   return prompt.flatMap((message) => {
     if (message.role === "user") {
+      return message.content.flatMap((part) => (part.type === "text" ? [part.text] : []));
+    }
+    // Within a run, an assistant message is only added together with its tool calls, so a
+    // text only assistant message is an earlier turn, not unchecked text from this run.
+    if (message.role === "assistant" && message.content.every((part) => part.type === "text")) {
       return message.content.flatMap((part) => (part.type === "text" ? [part.text] : []));
     }
     if (message.role === "tool") {

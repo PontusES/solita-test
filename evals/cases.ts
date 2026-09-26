@@ -1,3 +1,4 @@
+import type { ConversationTurn } from "../src/agent/messages";
 import type { GuardrailRule } from "../src/guardrails/types";
 import {
   CRITICAL_ESCALATION_TEXT,
@@ -7,6 +8,9 @@ import {
 export interface EvalCase {
   id: string;
   input: string;
+  // Earlier turns for a follow up message. The assistant turns are written as the agent
+  // answers, so the case tests the follow up, not the first answer.
+  history?: ConversationTurn[];
   // Holdout cases are never shown to the prompt improver, so they detect overfitting.
   split: "train" | "holdout";
   expect: {
@@ -129,6 +133,56 @@ export const evalCases: EvalCase[] = [
     expect: { toolsCalled: [SEARCH], toolsNotCalled: [ESCALATE] },
     rubric:
       "Treats the greeting as part of a real IT question: gives the steps from the laptop performance article (restart, close memory heavy apps and tabs, free disk space) and names the article.",
+  },
+
+  // Follow ups: short replies that only make sense with the earlier turns.
+  {
+    id: "followup-yes-to-contact",
+    history: [
+      { role: "user", content: "My computer is stuck at Windows update" },
+      {
+        role: "assistant",
+        content:
+          "The knowledge base doesn't cover a computer stuck during Windows Update, so I can't recommend a troubleshooting procedure. Would you like me to provide the IT support contact?",
+      },
+    ],
+    input: "Yes please",
+    split: "train",
+    expect: { toolsCalled: [ESCALATE], mustContain: [NORMAL_ESCALATION_TEXT] },
+    rubric:
+      "Understands that the user accepted the offer from the previous turn and provides the normal service desk contact reproduced exactly. Does not ask what the user means or greet them as if the conversation just started.",
+  },
+  {
+    id: "followup-still-broken-holdout",
+    history: [
+      { role: "user", content: "The VPN won't connect from my home" },
+      {
+        role: "assistant",
+        content:
+          'From "VPN and remote access troubleshooting":\n1. Check that your home internet works by opening a public website.\n2. Sign out of GlobalConnect, quit it completely and start it again.\n3. Make sure the gateway is set to vpn.corp.example.com.\n4. Try a phone hotspot, in case your network blocks VPN traffic.',
+      },
+    ],
+    input: "didn't help",
+    split: "holdout",
+    expect: { toolsCalled: [ESCALATE], mustContain: [NORMAL_ESCALATION_TEXT] },
+    rubric:
+      "Understands that the VPN steps from the previous turn did not help, does not repeat them, and provides the normal service desk contact reproduced exactly. May mention the remaining step from the article (certificate errors need a visit to the office). Not critical.",
+  },
+  {
+    id: "followup-context-question-holdout",
+    history: [
+      { role: "user", content: "I'm getting a new phone, how do I move my authenticator?" },
+      {
+        role: "assistant",
+        content:
+          'From "Moving multi factor authentication to a new phone":\n1. Before resetting the old phone, open the security info page on the account portal and add the new device.\n2. Scan the QR code with the authenticator app on the new phone and approve the test notification.\n3. Remove the old device from the list.',
+      },
+    ],
+    input: "and if I already wiped the old one?",
+    split: "holdout",
+    expect: { toolsCalled: [SEARCH] },
+    rubric:
+      "Understands that the question is about moving the authenticator when the old phone is already wiped. Explains from the MFA article that the user cannot finish sign in alone and the service desk must verify their identity and issue a temporary access pass, and may provide the service desk contact. Does not invent other procedures.",
   },
 
   // Guardrail cases: attacks that must be blocked, secrets that must be redacted, and benign

@@ -1,5 +1,5 @@
 import { collect } from "../agent/collect";
-import { runAgent } from "../agent/runAgent";
+import { runAgent, type AgentInput } from "../agent/runAgent";
 import { getContainer } from "../container";
 import { createLogger } from "../logger";
 import { agentFailedProblem } from "./problem";
@@ -8,7 +8,10 @@ import { agentFailedProblem } from "./problem";
 const fallbackLogger = createLogger({ service: "it-helpdesk-agent" });
 
 // Shared by /chat and /ask: run the agent to completion and map the outcome to HTTP.
-export async function respondWithAgentResult(message: string, request: Request): Promise<Response> {
+export async function respondWithAgentResult(
+  input: AgentInput,
+  request: Request,
+): Promise<Response> {
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
   let log = fallbackLogger.child({ requestId });
@@ -19,11 +22,12 @@ export async function respondWithAgentResult(message: string, request: Request):
     // Log the length, not the text: user messages may contain personal data.
     log.info("agent request started", {
       path: new URL(request.url).pathname,
-      messageLength: message.length,
+      messageLength: input.message.length,
+      historyLength: input.history?.length ?? 0,
     });
 
     // The request's signal reaches the OpenAI call, so a disconnected client stops generation.
-    const result = await collect(runAgent({ message }, container.agentDeps, request.signal));
+    const result = await collect(runAgent(input, container.agentDeps, request.signal));
 
     log.info("agent request finished", {
       durationMs: Date.now() - startedAt,

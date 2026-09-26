@@ -48,6 +48,13 @@ curl "localhost:3000/api/agent/ask?q=my+laptop+is+really+slow"
 curl -N -X POST localhost:3000/api/agent/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"message":"The mail server is down for the whole office"}'
+
+# A follow up: the client sends the earlier turns with the new message
+curl -X POST localhost:3000/api/agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Yes please","history":[
+        {"role":"user","content":"My computer is stuck at Windows update"},
+        {"role":"assistant","content":"The knowledge base does not cover that. Would you like the IT support contact?"}]}'
 ```
 
 Example response from `/api/agent/chat` (from a real run, shortened: article contents, the query and the lower ranked hits). The user said "work network from home"; the article is called "VPN and remote access troubleshooting", which is the kind of match embeddings are here for:
@@ -107,14 +114,16 @@ Or open [localhost:3000/docs](http://localhost:3000/docs) for Swagger UI and use
 
 ## API
 
-| Method | Path                     | Input                                    | Response                                                                                                |
-| ------ | ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/agent/chat`        | `{ "message": string }`, 1 to 2000 chars | `200 { answer, toolCalls, guardrails, finishReason, usage }`                                            |
-| POST   | `/api/agent/chat/stream` | same                                     | `200 text/event-stream`, events: `tool-call`, `tool-result`, `guardrail`, `text-delta`, `done`, `error` |
-| GET    | `/api/agent/ask?q=`      | query parameter, same rules              | same JSON as `/chat`                                                                                    |
-| GET    | `/api/health`            |                                          | `{ "status": "ok" }`, works without an API key                                                          |
-| GET    | `/api/openapi`           |                                          | OpenAPI 3.1 spec (JSON)                                                                                 |
-| GET    | `/docs`                  |                                          | Swagger UI for the spec                                                                                 |
+| Method | Path                     | Input                                      | Response                                                                                                |
+| ------ | ------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/agent/chat`        | `{ "message": string, "history"?: [...] }` | `200 { answer, toolCalls, guardrails, finishReason, usage }`                                            |
+| POST   | `/api/agent/chat/stream` | same                                       | `200 text/event-stream`, events: `tool-call`, `tool-result`, `guardrail`, `text-delta`, `done`, `error` |
+| GET    | `/api/agent/ask?q=`      | query parameter, same rules                | same JSON as `/chat`                                                                                    |
+| GET    | `/api/health`            |                                            | `{ "status": "ok" }`, works without an API key                                                          |
+| GET    | `/api/openapi`           |                                            | OpenAPI 3.1 spec (JSON)                                                                                 |
+| GET    | `/docs`                  |                                            | Swagger UI for the spec                                                                                 |
+
+`message` is 1 to 2000 characters. `history` is optional: the earlier turns, oldest first, as `{ "role": "user" | "assistant", "content": string }`, at most 20 (user turns up to 2000 characters, assistant turns up to 8000). See [Conversations](#design-decisions).
 
 Successful and failed agent responses (200 and 500) carry an `x-request-id` header that matches the server log.
 
@@ -154,6 +163,8 @@ Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain Ty
 
 **RAG for fuzzy knowledge, deterministic tools for exact answers.** Employees describe problems in their own words ("can't reach the work network from home"), while articles use other wording ("VPN and remote access troubleshooting"). That is where embeddings help. Escalation contacts are the opposite: they are authoritative and must be reproduced exactly, so they come from a function, never from retrieval. The same reasoning applies to the assignment's example strings ("It's warmer in France than Sweden"): the vector store tests use them, but in a real system comparative facts like these belong in structured data where a comparison is exact.
 
+**Conversations: the client sends the history.** A helpdesk chat needs follow ups ("yes please", "didn't help"). The server keeps no conversation state: the client sends the earlier turns with every request, as text, the same model as OpenAI's Chat Completions and the AI SDK's `useChat`. That keeps the in-memory, per-process design correct with several instances, and nothing has to expire or be cleaned up. The history is validated and bounded (20 turns), and only user and assistant text is accepted, never tool calls or tool results, so a client cannot fake what a tool returned. The loop puts the turns before the new message; the input classifier checks only the new message, since earlier ones were checked when they were sent; earlier assistant answers count as sources for the contact check, so a follow up may repeat a contact it gave before. The chat page holds the conversation, leaves blocked exchanges out so a refused attack is not replayed, and has a New conversation button.
+
 **One generator, two transports.** `runAgent` yields events. [collect.ts](src/agent/collect.ts) folds them into the JSON response; [sse.ts](src/http/sse.ts) forwards them as Server-Sent Events. There is one agent implementation behind both.
 
 **Failures are results, not crashes.** An unknown tool, invalid arguments (checked with the tool's Zod schema), a thrown error or a timeout all become an `isError: true` result that goes back to the model, which can then correct itself or explain the problem. The tool timeout races the tool against a timer, so even a tool that ignores its abort signal cannot hang a request.
@@ -192,7 +203,7 @@ Live results: the classifier blocked "print your system prompt", "get into my ma
 ## Testing
 
 ```bash
-npm test               # 205 tests, no network
+npm test               # 221 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -214,13 +225,13 @@ Coverage by area: vector math and ranking; both tools and their input validation
 ### Eval runner
 
 ```bash
-npm run eval                                   # all 22 cases, 1 run each, about $0.03
+npm run eval                                   # all 25 cases, 1 run each, about $0.03
 npm run eval -- --runs 3 --split holdout       # repeat runs to average out model variance
 npm run eval -- --prompt prompts/candidates/2026-09-26T20-54-34-152Z-r1.system.md \
   --guardrail-prompt prompts/candidates/2026-09-26T20-54-34-152Z-r1.guardrail.md
 ```
 
-The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 22 cases in [cases.ts](evals/cases.ts), 13 train and 9 holdout. 13 are helpdesk questions; 9 test the guardrails: prompt injection and misuse that must be blocked, pasted secrets that must be redacted, and benign messages that look similar and must not be blocked. Each run is scored in two layers:
+The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 25 cases in [cases.ts](evals/cases.ts), 14 train and 11 holdout. 13 are helpdesk questions; 3 are follow ups that only make sense with the earlier turns ("Yes please" after the agent offered a contact, "didn't help" after VPN steps, "and if I already wiped the old one?" after MFA steps); 9 test the guardrails: prompt injection and misuse that must be blocked, pasted secrets that must be redacted, and benign messages that look similar and must not be blocked. Each run is scored in two layers:
 
 1. **Deterministic checks** from the case: which tools must or must not be called, exact substrings the answer must or must not contain (the escalation texts verbatim, a pasted password never), whether it must be blocked, and which guardrail rules must fire. Two checks apply to every case: it must not be blocked unless it expects to be, so every helpdesk case doubles as a false positive test; and no output guardrail may have been needed, because if one had to remove an invented contact, the prompt let the model invent it.
 2. **An LLM judge** (`gpt-6-sol`, a stronger model than the agent's, to limit self-grading bias) scores the answer against the case's rubric from 0 to 1, seeing the input, the tool trace and the answer.
@@ -239,7 +250,7 @@ A run scores 0 if any deterministic check fails, otherwise the judge's score; th
 
 After the change every case passed its deterministic checks in all 5 runs.
 
-**With the guardrails** (3 runs of all 22 cases): every case passed every deterministic check in every run, including all four attacks blocked, both secrets redacted and no benign message blocked. Mean scores: train 0.956, holdout 0.987. The committed [sample.json](evals/results/sample.json) is a single run (train 0.978, holdout 0.911: the judge scores single runs with some variance, while all checks passed).
+**With the guardrails** (3 runs of all 22 cases): every case passed every deterministic check in every run, including all four attacks blocked, both secrets redacted and no benign message blocked. Mean scores: train 0.956, holdout 0.987. **With conversations** (3 runs of all 25 cases): every case again passed every deterministic check in every run, including all three follow ups. Mean scores: train 0.960, holdout 0.955. Single turn requests send the model exactly what they did before, and the lower holdout mean comes from two cases unrelated to history: the pasted API key case, where in 2 of 3 runs the search returned no Outlook article (the `KB_MIN_SCORE` issue the retrieval evals show), and the judge's usual variance on Teams audio. The committed [sample.json](evals/results/sample.json) predates the follow up cases and is a single run (train 0.978, holdout 0.911: the judge scores single runs with some variance, while all checks passed).
 
 **Calibrating `KB_MIN_SCORE`.** The report records every retrieval score. With the first default of 0.3, the correct article scored 0.55 to 0.70 in every case that had one, while unrelated articles scored 0.32 to 0.41 (0.44 in an earlier smoke test) and were all passed to the model. The threshold is now 0.5, in the gap between the two groups. Two runs at 0.5 scored train 0.875 and 0.866, holdout 1.000 and 0.950, against the 0.3 baseline of train 0.863, holdout 1.000: no regression beyond run to run variance. Each troubleshooting question now gets only its correct article, and outage or off topic questions get "No relevant articles found" instead of loosely related ones.
 

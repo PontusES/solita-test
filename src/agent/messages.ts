@@ -14,6 +14,18 @@ export interface ToolResult {
   isError: boolean;
 }
 
+// An earlier turn of the conversation as the client sends it: text only. Tool calls and their
+// results from earlier turns are not accepted from clients, so they cannot fake tool output.
+export interface ConversationTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+// Enough for a helpdesk conversation, and it bounds the tokens a single request can cost.
+export const MAX_HISTORY_MESSAGES = 20;
+// Answers can be longer than questions, but still bounded.
+export const MAX_ASSISTANT_TURN_LENGTH = 8000;
+
 export type AgentMessage =
   | { role: "user"; content: string }
   | { role: "assistant"; text: string; toolCalls: ToolCall[] }

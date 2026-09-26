@@ -118,7 +118,18 @@ export function buildOpenApiSpec() {
             content: {
               "application/json": {
                 schema: ref("ChatRequest"),
-                example: { message: "The printer only prints blank white pages" },
+                // A follow up, to show that the client sends the earlier turns.
+                example: {
+                  message: "Yes please",
+                  history: [
+                    { role: "user", content: "My computer is stuck at Windows update" },
+                    {
+                      role: "assistant",
+                      content:
+                        "The knowledge base does not cover a computer stuck during Windows Update. Would you like the IT support contact?",
+                    },
+                  ],
+                },
               },
             },
           },

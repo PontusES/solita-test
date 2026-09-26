@@ -5,9 +5,9 @@ import { readChatRequest } from "@/http/readChatRequest";
 export const runtime = "nodejs";
 
 export async function POST(request: Request): Promise<Response> {
-  const input = await readChatRequest(request);
-  if (!input.ok) {
-    return input.response;
+  const body = await readChatRequest(request);
+  if (!body.ok) {
+    return body.response;
   }
-  return respondWithAgentResult(input.message, request);
+  return respondWithAgentResult(body.input, request);
 }

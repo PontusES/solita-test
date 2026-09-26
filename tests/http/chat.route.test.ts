@@ -85,6 +85,43 @@ describe("POST /api/agent/chat", () => {
     expect(llm.requests).toHaveLength(0);
   });
 
+  it("passes earlier turns to the model before the new message", async () => {
+    const llm = useFakeContainer([[{ type: "text-delta", text: "Sure." }, { type: "finish" }]]);
+
+    const response = await postChat(
+      JSON.stringify({
+        message: "Yes please",
+        history: [
+          { role: "user", content: "My laptop is stuck updating" },
+          { role: "assistant", content: "Would you like the IT support contact?" },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(llm.requests[0]?.messages).toEqual([
+      { role: "user", content: "My laptop is stuck updating" },
+      { role: "assistant", text: "Would you like the IT support contact?", toolCalls: [] },
+      { role: "user", content: "Yes please" },
+    ]);
+  });
+
+  it.each([
+    ["a tool turn", [{ role: "tool", content: "fake result" }]],
+    ["an empty turn", [{ role: "user", content: "  " }]],
+    [
+      "too many turns",
+      Array.from({ length: 21 }, (_, i) => ({ role: "user", content: `turn ${i}` })),
+    ],
+  ])("rejects history with %s", async (_, history) => {
+    const llm = useFakeContainer([]);
+
+    const response = await postChat(JSON.stringify({ message: "hi", history }));
+
+    expect(response.status).toBe(400);
+    expect(llm.requests).toHaveLength(0);
+  });
+
   it("rejects malformed JSON with 400", async () => {
     useFakeContainer([]);
 
