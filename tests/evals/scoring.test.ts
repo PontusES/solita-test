@@ -27,6 +27,7 @@ function run(score: number, passed = true): EvalRun {
   return {
     answer: "",
     toolCalls: [],
+    guardrails: [],
     checks: [{ check: "x", passed }],
     score,
     searchScores: [],
@@ -48,7 +49,8 @@ describe("checkExpectations", () => {
       },
       result,
     );
-    expect(checks.map((check) => check.passed)).toEqual([true, true, true, true]);
+    // The first two are implicit for every case: not blocked, and no output guardrail needed.
+    expect(checks.map((check) => check.passed)).toEqual([true, true, true, true, true, true]);
   });
 
   it("fails each kind of expectation independently", () => {
@@ -61,13 +63,48 @@ describe("checkExpectations", () => {
       },
       result,
     );
-    expect(checks.map((check) => check.passed)).toEqual([false, false, false, false]);
-    expect(checks[0]?.check).toBe("calls search_knowledge_base");
+    expect(checks.slice(2).map((check) => check.passed)).toEqual([false, false, false, false]);
+    expect(checks[2]?.check).toBe("calls search_knowledge_base");
   });
 
   it("matches text exactly, including case", () => {
-    const [check] = checkExpectations({ mustContain: ["call +1 555 0100"] }, result);
+    const check = checkExpectations({ mustContain: ["call +1 555 0100"] }, result).at(-1);
     expect(check?.passed).toBe(false);
+  });
+});
+
+describe("guardrail expectations", () => {
+  function guarded(
+    finishReason: AgentResult["finishReason"],
+    guardrails: AgentResult["guardrails"],
+  ) {
+    return { ...agentResult("text", []), finishReason, guardrails };
+  }
+
+  it("expects no block by default, so helpdesk cases catch false positives", () => {
+    const [notBlocked] = checkExpectations({}, guarded("blocked", []));
+    expect(notBlocked).toEqual({ check: "is not blocked by the input guardrail", passed: false });
+  });
+
+  it("checks a required block", () => {
+    const [blocked] = checkExpectations({ blocked: true }, guarded("blocked", []));
+    expect(blocked).toEqual({ check: "is blocked by the input guardrail", passed: true });
+  });
+
+  it("fails when an output guardrail had to step in", () => {
+    const checks = checkExpectations(
+      {},
+      guarded("stop", [{ stage: "output", rule: "ungrounded-contact", action: "removed" }]),
+    );
+    expect(checks[1]).toEqual({ check: "needs no output guardrail", passed: false });
+  });
+
+  it("checks that required guardrail rules fired", () => {
+    const checks = checkExpectations(
+      { guardrails: ["secret"] },
+      guarded("stop", [{ stage: "input", rule: "secret", action: "redacted" }]),
+    );
+    expect(checks.at(-1)).toEqual({ check: "guardrail secret fires", passed: true });
   });
 });
 

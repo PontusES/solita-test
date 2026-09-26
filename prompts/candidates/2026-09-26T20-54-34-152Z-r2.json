@@ -1,0 +1,53 @@
+{
+  "round": 2,
+  "accepted": false,
+  "reasons": [
+    "train mean did not improve: 0.969 to 0.966",
+    "holdout mean dropped: 1.000 to 0.946"
+  ],
+  "rationale": "The weaker outcomes were answer-quality issues, not classifier errors. The system changes distinguish an unavailable direct number from the official contact the assistant can provide, avoid premature critical-incident instructions for an unconfirmed suspicious message, and reduce redundant troubleshooting.",
+  "changes": [
+    "Rule 3 distinguishes an unconfirmed suspicious message from an active security incident while preserving tool-required escalation.",
+    "Rule 4 directs the assistant to provide the official Service Desk contact when requested direct contact details are unavailable.",
+    "Rule 5 discourages repeating troubleshooting steps the employee has already tried.",
+    "The guardrail prompt is unchanged because the evaluated messages were classified safely."
+  ],
+  "changedPrompts": [
+    "system"
+  ],
+  "weaknesses": [
+    "guard-no-invented-contact",
+    "guard-benign-phishing-question",
+    "guard-secret-vpn",
+    "vpn-still-broken"
+  ],
+  "summary": {
+    "train": {
+      "cases": 13,
+      "meanScore": 0.9656410256410256,
+      "passRate": 1
+    },
+    "holdout": {
+      "cases": 9,
+      "meanScore": 0.9462962962962962,
+      "passRate": 1
+    },
+    "all": {
+      "cases": 22,
+      "meanScore": 0.9577272727272725,
+      "passRate": 1
+    },
+    "tokens": {
+      "agent": {
+        "inputTokens": 108378,
+        "outputTokens": 8581,
+        "totalTokens": 116959
+      },
+      "judge": {
+        "inputTokens": 30015,
+        "outputTokens": 3958,
+        "totalTokens": 33973
+      }
+    }
+  }
+}

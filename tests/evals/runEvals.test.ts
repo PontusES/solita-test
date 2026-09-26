@@ -94,7 +94,7 @@ describe("runEvals", () => {
 
     // The deterministic check failed, so the judge was never asked.
     expect(greeting).toMatchObject({ meanScore: 0, passRate: 0 });
-    expect(greeting?.runs[0]?.checks).toEqual([
+    expect(greeting?.runs[0]?.checks.filter((check) => !check.passed)).toEqual([
       { check: "does not call search_knowledge_base", passed: false },
     ]);
     expect(judge.calls).toBe(1);

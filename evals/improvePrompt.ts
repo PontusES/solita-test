@@ -1,3 +1,4 @@
+import type { PromptSet } from "../src/agent/systemPrompt";
 import { decideAcceptance, type AcceptanceDecision } from "./acceptance";
 import { selectTrainWeaknesses, validateCandidate, type Optimizer } from "./optimizer";
 import type { EvalReport } from "./runEvals";
@@ -5,7 +6,7 @@ import type { EvalSummary } from "./scoring";
 
 export interface RoundResult {
   round: number;
-  prompt: string;
+  prompts: PromptSet;
   rationale: string;
   changes: string[];
   weaknessIds: string[];
@@ -15,10 +16,10 @@ export interface RoundResult {
 }
 
 export interface ImproveOptions {
-  basePrompt: string;
+  base: PromptSet;
   rounds: number;
   // Injected so the loop can be unit tested without calling any model.
-  evaluate: (prompt: string) => Promise<EvalReport>;
+  evaluate: (prompts: PromptSet) => Promise<EvalReport>;
   optimizer: Optimizer;
   onRound?: (result: RoundResult) => void | Promise<void>;
   onLog?: (message: string) => void;
@@ -26,7 +27,7 @@ export interface ImproveOptions {
 
 export interface ImproveResult {
   baseline: EvalSummary;
-  best: { prompt: string; summary: EvalSummary };
+  best: { prompts: PromptSet; summary: EvalSummary };
   rounds: RoundResult[];
   stoppedEarly?: string;
 }
@@ -34,9 +35,9 @@ export interface ImproveResult {
 export async function improvePrompt(options: ImproveOptions): Promise<ImproveResult> {
   const log = options.onLog ?? (() => {});
 
-  log("Evaluating the baseline prompt");
-  const baselineReport = await options.evaluate(options.basePrompt);
-  let best = { prompt: options.basePrompt, report: baselineReport };
+  log("Evaluating the baseline prompts");
+  const baselineReport = await options.evaluate(options.base);
+  let best = { prompts: options.base, report: baselineReport };
   const rounds: RoundResult[] = [];
   let stoppedEarly: string | undefined;
 
@@ -48,28 +49,28 @@ export async function improvePrompt(options: ImproveOptions): Promise<ImproveRes
     }
 
     log(`Round ${round}: asking the optimizer about ${weaknesses.map((w) => w.id).join(", ")}`);
-    const proposal = await options.optimizer.propose({ currentPrompt: best.prompt, weaknesses });
+    const proposal = await options.optimizer.propose({ current: best.prompts, weaknesses });
     const base = {
       round,
-      prompt: proposal.revisedPrompt,
+      prompts: proposal.revised,
       rationale: proposal.rationale,
       changes: proposal.changes,
       weaknessIds: weaknesses.map((weakness) => weakness.id),
     };
 
     // A structurally broken prompt is rejected before spending an eval run on it.
-    const problems = validateCandidate(proposal.revisedPrompt);
+    const problems = validateCandidate(proposal.revised);
     let result: RoundResult;
     if (problems.length > 0) {
       result = { ...base, decision: { accepted: false, reasons: problems } };
     } else {
       log(`Round ${round}: evaluating the candidate`);
-      const report = await options.evaluate(proposal.revisedPrompt);
+      const report = await options.evaluate(proposal.revised);
       const decision = decideAcceptance(best.report, report);
       result = { ...base, summary: report.summary, decision };
       if (decision.accepted) {
         // The accepted candidate is what the next round tries to beat.
-        best = { prompt: proposal.revisedPrompt, report };
+        best = { prompts: proposal.revised, report };
       }
     }
 
@@ -79,7 +80,7 @@ export async function improvePrompt(options: ImproveOptions): Promise<ImproveRes
 
   return {
     baseline: baselineReport.summary,
-    best: { prompt: best.prompt, summary: best.report.summary },
+    best: { prompts: best.prompts, summary: best.report.summary },
     rounds,
     stoppedEarly,
   };

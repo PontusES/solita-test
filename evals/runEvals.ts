@@ -43,6 +43,7 @@ async function runOnce(evalCase: EvalCase, deps: AgentDeps, judge: Judge): Promi
     return {
       answer: "",
       toolCalls: [],
+      guardrails: [],
       checks: [],
       score: 0,
       searchScores: [],
@@ -56,6 +57,8 @@ async function runOnce(evalCase: EvalCase, deps: AgentDeps, judge: Judge): Promi
   const base = {
     answer: result.answer,
     toolCalls: result.toolCalls,
+    finishReason: result.finishReason,
+    guardrails: result.guardrails,
     checks,
     searchScores: searchScores(result.toolCalls),
   };

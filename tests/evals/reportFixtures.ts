@@ -5,6 +5,8 @@ export function run(score: number, options: Partial<EvalRun> = {}): EvalRun {
   return {
     answer: "an answer",
     toolCalls: [],
+    finishReason: "stop",
+    guardrails: [],
     checks: [{ check: "calls search_knowledge_base", passed: score > 0 }],
     judge: score > 0 ? { score, reasoning: `judged ${score}` } : undefined,
     score,

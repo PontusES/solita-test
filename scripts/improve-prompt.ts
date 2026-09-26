@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import type { PromptSet } from "../src/agent/systemPrompt";
 import { getConfig } from "../src/config";
 import { createAgentDeps } from "../src/container";
 import { evalCases } from "../evals/cases";
@@ -11,11 +12,13 @@ import { createOpenAiOptimizer } from "../evals/optimizer";
 import { runEvals } from "../evals/runEvals";
 import type { EvalSummary } from "../evals/scoring";
 
-// Usage: npm run improve-prompt -- [--prompt prompts/system.md] [--rounds 3] [--runs 3] [--apply]
+// Usage: npm run improve-prompt -- [--prompt prompts/system.md] [--guardrail-prompt prompts/guardrail.md]
+//                                  [--rounds 3] [--runs 3] [--apply]
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       prompt: { type: "string", default: "prompts/system.md" },
+      "guardrail-prompt": { type: "string", default: "prompts/guardrail.md" },
       rounds: { type: "string", default: "3" },
       // More than one run per case, because single runs are too noisy to compare prompts.
       runs: { type: "string", default: "3" },
@@ -37,8 +40,11 @@ async function main(): Promise<void> {
     process.loadEnvFile(".env.local");
   }
   const config = getConfig();
-  const basePrompt = (await readFile(values.prompt, "utf8")).trim();
-  const guardrailPrompt = (await readFile("prompts/guardrail.md", "utf8")).trim();
+  const paths = { system: values.prompt, guardrail: values["guardrail-prompt"] };
+  const base: PromptSet = {
+    system: (await readFile(paths.system, "utf8")).trim(),
+    guardrail: (await readFile(paths.guardrail, "utf8")).trim(),
+  };
   const judge = createOpenAiJudge({
     apiKey: config.OPENAI_API_KEY,
     modelId: config.EVAL_JUDGE_MODEL,
@@ -47,19 +53,21 @@ async function main(): Promise<void> {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const candidatesDir = join("prompts", "candidates");
   await mkdir(candidatesDir, { recursive: true });
+  const candidatePath = (round: number, kind: keyof PromptSet) =>
+    join(candidatesDir, `${stamp}-r${round}.${kind}.md`);
 
   console.log(
-    `Improving ${values.prompt}: ${rounds} round(s), ${evalCases.length} cases x ${runs} run(s) per evaluation, optimizer ${config.EVAL_OPTIMIZER_MODEL}`,
+    `Improving ${paths.system} and ${paths.guardrail}: ${rounds} round(s), ${evalCases.length} cases x ${runs} run(s) per evaluation, optimizer ${config.EVAL_OPTIMIZER_MODEL}`,
   );
 
   const result = await improvePrompt({
-    basePrompt,
+    base,
     rounds,
     // Every evaluation, baseline and candidates, runs all cases so holdout is always measured.
-    evaluate: (prompt) =>
+    evaluate: (prompts) =>
       runEvals({
         cases: evalCases,
-        deps: createAgentDeps(config, { system: prompt, guardrail: guardrailPrompt }),
+        deps: createAgentDeps(config, prompts),
         judge,
         runs,
         concurrency,
@@ -70,12 +78,12 @@ async function main(): Promise<void> {
     }),
     onLog: (message) => console.log(message),
     onRound: async (round) => {
-      // Every candidate is kept, accepted or not: the prompt alone (usable with --prompt)
-      // and its scores and reasoning next to it.
-      const base = join(candidatesDir, `${stamp}-r${round.round}`);
-      await writeFile(`${base}.md`, `${round.prompt}\n`);
+      // Every candidate is kept, accepted or not: both prompts (usable with --prompt and
+      // --guardrail-prompt) and their scores and reasoning next to them.
+      await writeFile(candidatePath(round.round, "system"), `${round.prompts.system}\n`);
+      await writeFile(candidatePath(round.round, "guardrail"), `${round.prompts.guardrail}\n`);
       await writeFile(
-        `${base}.json`,
+        join(candidatesDir, `${stamp}-r${round.round}.json`),
         JSON.stringify(
           {
             round: round.round,
@@ -83,6 +91,9 @@ async function main(): Promise<void> {
             reasons: round.decision.reasons,
             rationale: round.rationale,
             changes: round.changes,
+            changedPrompts: (["system", "guardrail"] as const).filter(
+              (kind) => round.prompts[kind] !== base[kind],
+            ),
             weaknesses: round.weaknessIds,
             summary: round.summary,
           },
@@ -93,7 +104,7 @@ async function main(): Promise<void> {
       console.log(
         `Round ${round.round}: ${round.decision.accepted ? "ACCEPTED" : "rejected"}${round.decision.reasons.length ? ` (${round.decision.reasons.join("; ")})` : ""}`,
       );
-      console.log(`  written to ${base}.md`);
+      console.log(`  written to ${join(candidatesDir, `${stamp}-r${round.round}.*`)}`);
     },
   });
 
@@ -115,17 +126,19 @@ async function main(): Promise<void> {
     }
   }
 
-  if (accepted.length === 0) {
-    console.log(`${values.prompt} is unchanged: no candidate was measurably better.`);
+  const last = accepted.at(-1);
+  if (!last) {
+    console.log("The prompts are unchanged: no candidate was measurably better.");
   } else if (values.apply) {
-    await writeFile(values.prompt, `${result.best.prompt}\n`);
-    console.log(`Applied the best candidate to ${values.prompt}. Review it with git diff.`);
-  } else {
-    const last = accepted.at(-1);
+    await writeFile(paths.system, `${result.best.prompts.system}\n`);
+    await writeFile(paths.guardrail, `${result.best.prompts.guardrail}\n`);
     console.log(
-      `Review with: diff ${values.prompt} ${join(candidatesDir, `${stamp}-r${last?.round}.md`)}`,
+      `Applied the best candidate to ${paths.system} and ${paths.guardrail}. Review with git diff.`,
     );
-    console.log("Then rerun with --apply to write it, or copy it by hand.");
+  } else {
+    console.log(`Review with: diff ${paths.system} ${candidatePath(last.round, "system")}`);
+    console.log(`        and: diff ${paths.guardrail} ${candidatePath(last.round, "guardrail")}`);
+    console.log("Then rerun with --apply to write them, or copy them by hand.");
   }
 }
 
