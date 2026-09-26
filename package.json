@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "eval": "tsx scripts/eval.ts",
+    "eval:retrieval": "tsx scripts/eval-retrieval.ts",
     "improve-prompt": "tsx scripts/improve-prompt.ts"
   },
   "dependencies": {
