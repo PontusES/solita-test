@@ -8,12 +8,14 @@ import { evalCases } from "../evals/cases";
 import { createOpenAiJudge } from "../evals/judge";
 import { runEvals } from "../evals/runEvals";
 
-// Usage: npm run eval -- [--prompt prompts/system.md] [--runs 1] [--split all] [--concurrency 4]
+// Usage: npm run eval -- [--prompt prompts/system.md] [--guardrail-prompt prompts/guardrail.md]
+//                        [--runs 1] [--split all] [--concurrency 4]
 // A main function instead of top-level await, which tsx does not support in CommonJS mode.
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       prompt: { type: "string", default: "prompts/system.md" },
+      "guardrail-prompt": { type: "string", default: "prompts/guardrail.md" },
       runs: { type: "string", default: "1" },
       split: { type: "string", default: "all" },
       concurrency: { type: "string", default: "4" },
@@ -36,7 +38,10 @@ async function main(): Promise<void> {
   }
 
   const config = getConfig();
-  const systemPrompt = (await readFile(values.prompt, "utf8")).trim();
+  const prompts = {
+    system: (await readFile(values.prompt, "utf8")).trim(),
+    guardrail: (await readFile(values["guardrail-prompt"], "utf8")).trim(),
+  };
   const cases = evalCases.filter((evalCase) => split === "all" || evalCase.split === split);
 
   console.log(
@@ -45,7 +50,7 @@ async function main(): Promise<void> {
 
   const report = await runEvals({
     cases,
-    deps: createAgentDeps(config, systemPrompt),
+    deps: createAgentDeps(config, prompts),
     judge: createOpenAiJudge({ apiKey: config.OPENAI_API_KEY, modelId: config.EVAL_JUDGE_MODEL }),
     runs,
     concurrency,
@@ -87,6 +92,8 @@ async function main(): Promise<void> {
         meta: {
           createdAt,
           prompt: values.prompt,
+          guardrailPrompt: values["guardrail-prompt"],
+          guardrailModel: config.GUARDRAIL_MODEL,
           chatModel: config.OPENAI_CHAT_MODEL,
           judgeModel: config.EVAL_JUDGE_MODEL,
           embeddingModel: config.OPENAI_EMBEDDING_MODEL,

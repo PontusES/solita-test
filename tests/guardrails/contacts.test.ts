@@ -28,6 +28,17 @@ describe("removeUngroundedContacts", () => {
     });
   });
 
+  it("accepts a link to a domain that a source mentions without https", () => {
+    const answer = "Go to https://password.corp.example.com/ and verify your identity.";
+    const source = "use the self service password page at password.corp.example.com";
+    expect(removeUngroundedContacts(answer, [source]).removed).toEqual([]);
+  });
+
+  it("does not accept a different page on a known domain as the same link", () => {
+    const answer = "Open https://support.example.com/admin/reset-all to fix it.";
+    expect(removeUngroundedContacts(answer, [NORMAL_ESCALATION_TEXT]).removed).toHaveLength(1);
+  });
+
   it("removes contacts the model made up", () => {
     const { text, removed } = removeUngroundedContacts(
       "Call the IT manager at +1 555 0199 22 or mail boss@example.com.",

@@ -1,7 +1,8 @@
 import { createOpenAiLlmClient } from "./agent/llm/openAiClient";
 import type { AgentDeps } from "./agent/runAgent";
-import { loadSystemPrompt } from "./agent/systemPrompt";
+import { loadPromptSet, type PromptSet } from "./agent/systemPrompt";
 import { getConfig, type Config } from "./config";
+import { createLlmInputGuard } from "./guardrails/inputGuard";
 import { articles } from "./knowledge/articles";
 import { OpenAiEmbeddingProvider } from "./knowledge/embeddings";
 import { createLogger, type Logger } from "./logger";
@@ -15,8 +16,8 @@ export interface Container {
 }
 
 // The production wiring of the agent. Used by the HTTP container and by the eval runner,
-// which passes a different prompt but must otherwise test exactly what runs in production.
-export function createAgentDeps(config: Config, systemPrompt: string): AgentDeps {
+// which passes different prompts but must otherwise test exactly what runs in production.
+export function createAgentDeps(config: Config, prompts: PromptSet): AgentDeps {
   const embeddings = new OpenAiEmbeddingProvider({
     apiKey: config.OPENAI_API_KEY,
     modelId: config.OPENAI_EMBEDDING_MODEL,
@@ -37,9 +38,15 @@ export function createAgentDeps(config: Config, systemPrompt: string): AgentDeps
       modelId: config.OPENAI_CHAT_MODEL,
     }),
     tools,
-    systemPrompt,
+    systemPrompt: prompts.system,
     maxSteps: config.AGENT_MAX_STEPS,
     toolTimeoutMs: config.TOOL_TIMEOUT_MS,
+    inputGuard: createLlmInputGuard({
+      apiKey: config.OPENAI_API_KEY,
+      modelId: config.GUARDRAIL_MODEL,
+      instructions: prompts.guardrail,
+      timeoutMs: config.GUARDRAIL_TIMEOUT_MS,
+    }),
   };
 }
 
@@ -48,7 +55,7 @@ export function createAgentDeps(config: Config, systemPrompt: string): AgentDeps
 async function buildContainer(): Promise<Container> {
   const config = getConfig();
   return {
-    agentDeps: createAgentDeps(config, await loadSystemPrompt()),
+    agentDeps: createAgentDeps(config, await loadPromptSet()),
     logger: createLogger({ service: "it-helpdesk-agent" }),
   };
 }

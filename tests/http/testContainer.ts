@@ -1,4 +1,5 @@
 import { FakeLlmClient } from "@/agent/llm/fakeLlmClient";
+import type { InputGuard } from "@/guardrails/inputGuard";
 import type { LlmStepEvent } from "@/agent/llm/llmClient";
 import { setContainerForTests } from "@/container";
 import { articles } from "@/knowledge/articles";
@@ -11,7 +12,7 @@ import { createSearchKnowledgeBaseTool } from "@/tools/searchKnowledgeBase";
 export const usage = { inputTokens: 10, outputTokens: 5, totalTokens: 15 };
 
 // Real tools and loop, with the network-facing parts (LLM, embeddings) replaced by fakes.
-export function useFakeContainer(steps: LlmStepEvent[][]): FakeLlmClient {
+export function useFakeContainer(steps: LlmStepEvent[][], inputGuard?: InputGuard): FakeLlmClient {
   const llm = new FakeLlmClient(steps);
   setContainerForTests({
     agentDeps: {
@@ -28,6 +29,7 @@ export function useFakeContainer(steps: LlmStepEvent[][]): FakeLlmClient {
       systemPrompt: "test prompt",
       maxSteps: 5,
       toolTimeoutMs: 1_000,
+      inputGuard,
     },
     logger: silentLogger,
   });

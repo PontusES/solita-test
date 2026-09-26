@@ -42,15 +42,31 @@ export function extractContacts(text: string): Contact[] {
   return contacts;
 }
 
+// Articles often mention a bare domain ("password.corp.example.com") that the model then writes
+// as a link, so URLs are compared without their scheme.
+function withoutScheme(url: string): string {
+  return url.replace(/^https?:\/\//, "");
+}
+
 // A contact is grounded if it appears in what the model was given: tool results or the user's
 // own message. Anything else was made up, and a made up phone number sends people nowhere.
 export function removeUngroundedContacts(
   answer: string,
   sources: string[],
 ): { text: string; removed: Contact[] } {
-  const known = new Set(sources.flatMap(extractContacts).map((contact) => contact.normalized));
-  const removed = extractContacts(answer).filter((contact) => !known.has(contact.normalized));
+  const sourceText = sources.join("\n").toLowerCase();
+  const knownPhones = new Set(
+    sources
+      .flatMap(extractContacts)
+      .filter((contact) => contact.kind === "phone")
+      .map((contact) => contact.normalized),
+  );
+  const isGrounded = (contact: Contact) =>
+    contact.kind === "phone"
+      ? knownPhones.has(contact.normalized)
+      : sourceText.includes(withoutScheme(contact.normalized));
 
+  const removed = extractContacts(answer).filter((contact) => !isGrounded(contact));
   let text = answer;
   for (const contact of removed) {
     text = text.split(contact.raw).join(CONTACT_REMOVED);

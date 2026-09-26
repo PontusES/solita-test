@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// The prompt lives in a file so it is a versioned artifact that the eval runner and the
-// prompt improver can swap. Cached per file, since it does not change while running.
+// The prompts live in files so they are versioned artifacts that the eval runner and the
+// prompt improver can swap. Cached per file, since they do not change while running.
 const cache = new Map<string, Promise<string>>();
 
 // `fileName` is relative to the prompts folder, for example "system.md" or "candidates/x.md".
@@ -16,4 +16,19 @@ export function loadSystemPrompt(fileName: string = "system.md"): Promise<string
     cache.set(absolutePath, prompt);
   }
   return prompt;
+}
+
+// The two prompts that shape the agent's behaviour: the agent's own instructions and the input
+// guardrail classifier's. They are versioned and improved together as one set.
+export interface PromptSet {
+  system: string;
+  guardrail: string;
+}
+
+export async function loadPromptSet(): Promise<PromptSet> {
+  const [system, guardrail] = await Promise.all([
+    loadSystemPrompt("system.md"),
+    loadSystemPrompt("guardrail.md"),
+  ]);
+  return { system, guardrail };
 }

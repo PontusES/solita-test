@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INPUT_REFUSAL, type InputGuard } from "../guardrails/inputGuard";
 import type { ToolRegistry } from "../tools/registry";
 import type { AgentEvent, TokenUsage } from "./events";
 import type { LlmClient } from "./llm/llmClient";
@@ -10,6 +11,9 @@ export interface AgentDeps {
   systemPrompt: string;
   maxSteps: number;
   toolTimeoutMs: number;
+  // Classifies the message before the agent runs. Optional so unit tests of the loop itself
+  // stay small; the production wiring in container.ts always sets it.
+  inputGuard?: InputGuard;
 }
 
 export interface AgentInput {
@@ -96,6 +100,30 @@ export async function* runAgent(
   const reportedGuardrails = new Set<string>();
 
   try {
+    if (deps.inputGuard) {
+      let verdict;
+      try {
+        verdict = await deps.inputGuard.check(input.message, signal);
+      } catch {
+        if (signal.aborted) {
+          yield ABORTED;
+          return;
+        }
+        // Fail open: a classifier outage must not take the helpdesk down. The deterministic
+        // guardrails still apply, and the notice makes the gap visible in logs and responses.
+        yield { type: "guardrail", stage: "input", rule: "classifier-error", action: "allowed" };
+      }
+      if (verdict) {
+        usage = addUsage(usage, verdict.usage);
+        if (verdict.category !== "safe") {
+          yield { type: "guardrail", stage: "input", rule: verdict.category, action: "blocked" };
+          yield { type: "text-delta", text: INPUT_REFUSAL };
+          yield { type: "done", finishReason: "blocked", usage };
+          return;
+        }
+      }
+    }
+
     for (let step = 0; step < deps.maxSteps; step++) {
       if (signal.aborted) {
         yield ABORTED;

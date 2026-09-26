@@ -1,5 +1,5 @@
 import type { GuardrailNotice } from "../guardrails/types";
-import type { AgentEvent, TokenUsage } from "./events";
+import type { AgentEvent, FinishReason, TokenUsage } from "./events";
 
 export interface ToolCallTrace {
   name: string;
@@ -12,7 +12,7 @@ export interface AgentResult {
   answer: string;
   toolCalls: ToolCallTrace[];
   guardrails: GuardrailNotice[];
-  finishReason: "stop" | "max-steps";
+  finishReason: FinishReason;
   usage?: TokenUsage;
 }
 

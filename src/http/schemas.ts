@@ -34,7 +34,7 @@ export const chatResponseSchema = z.object({
       action: z.string(),
     }),
   ),
-  finishReason: z.enum(["stop", "max-steps"]),
+  finishReason: z.enum(["stop", "max-steps", "blocked"]),
   usage: tokenUsageSchema.optional(),
 });
 

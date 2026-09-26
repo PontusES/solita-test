@@ -11,6 +11,8 @@ describe("parseConfig", () => {
       KB_MIN_SCORE: 0.5,
       OPENAI_CHAT_MODEL: "gpt-6-luna",
       OPENAI_EMBEDDING_MODEL: "text-embedding-3-small",
+      GUARDRAIL_MODEL: "gpt-6-luna",
+      GUARDRAIL_TIMEOUT_MS: 5_000,
       EVAL_JUDGE_MODEL: "gpt-6-sol",
       EVAL_OPTIMIZER_MODEL: "gpt-6-sol",
     });

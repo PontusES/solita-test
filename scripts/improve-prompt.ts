@@ -38,6 +38,7 @@ async function main(): Promise<void> {
   }
   const config = getConfig();
   const basePrompt = (await readFile(values.prompt, "utf8")).trim();
+  const guardrailPrompt = (await readFile("prompts/guardrail.md", "utf8")).trim();
   const judge = createOpenAiJudge({
     apiKey: config.OPENAI_API_KEY,
     modelId: config.EVAL_JUDGE_MODEL,
@@ -58,7 +59,7 @@ async function main(): Promise<void> {
     evaluate: (prompt) =>
       runEvals({
         cases: evalCases,
-        deps: createAgentDeps(config, prompt),
+        deps: createAgentDeps(config, { system: prompt, guardrail: guardrailPrompt }),
         judge,
         runs,
         concurrency,

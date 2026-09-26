@@ -9,6 +9,7 @@ import { FakeEmbeddingProvider } from "@/knowledge/fakeEmbeddings";
 import { CRITICAL_ESCALATION_TEXT, getEscalationContactTool } from "@/tools/getEscalationContact";
 import { ToolRegistry } from "@/tools/registry";
 import { createSearchKnowledgeBaseTool } from "@/tools/searchKnowledgeBase";
+import { INPUT_REFUSAL, type InputGuard, type InputVerdict } from "@/guardrails/inputGuard";
 import type { Tool } from "@/tools/tool";
 
 const usage = { inputTokens: 10, outputTokens: 5, totalTokens: 15 };
@@ -239,6 +240,77 @@ describe("runAgent", () => {
     expect(events.filter((event) => event.type === "guardrail")).toEqual([
       { type: "guardrail", stage: "input", rule: "secret", action: "redacted" },
     ]);
+  });
+
+  describe("input guardrail", () => {
+    function guardSaying(verdict: InputVerdict | Error): InputGuard & { calls: number } {
+      return {
+        calls: 0,
+        async check() {
+          this.calls++;
+          if (verdict instanceof Error) throw verdict;
+          return verdict;
+        },
+      };
+    }
+
+    it("refuses a blocked message without running the agent", async () => {
+      const llm = new FakeLlmClient([[text("never"), finish]]);
+      const inputGuard = guardSaying({ category: "prompt_injection", reason: "x", usage });
+
+      const events = await run(llm, { inputGuard });
+
+      expect(llm.requests).toHaveLength(0);
+      expect(events).toEqual([
+        { type: "guardrail", stage: "input", rule: "prompt_injection", action: "blocked" },
+        { type: "text-delta", text: INPUT_REFUSAL },
+        { type: "done", finishReason: "blocked", usage },
+      ]);
+    });
+
+    it("lets a safe message through and counts the classifier's tokens", async () => {
+      const llm = new FakeLlmClient([[text("Hello"), finish]]);
+
+      const events = await run(llm, {
+        inputGuard: guardSaying({ category: "safe", reason: "x", usage }),
+      });
+
+      expect(events.at(-1)).toEqual({
+        type: "done",
+        finishReason: "stop",
+        usage: { inputTokens: 20, outputTokens: 10, totalTokens: 30 },
+      });
+    });
+
+    it("fails open when the classifier errors, and says so", async () => {
+      const llm = new FakeLlmClient([[text("Hello"), finish]]);
+
+      const events = await run(llm, { inputGuard: guardSaying(new Error("classifier down")) });
+
+      expect(events[0]).toEqual({
+        type: "guardrail",
+        stage: "input",
+        rule: "classifier-error",
+        action: "allowed",
+      });
+      expect(events.at(-1)).toMatchObject({ type: "done", finishReason: "stop" });
+      expect(JSON.stringify(events)).not.toContain("classifier down");
+    });
+
+    it("stops when the request is aborted during the check", async () => {
+      const controller = new AbortController();
+      const llm = new FakeLlmClient([[text("never"), finish]]);
+      const inputGuard: InputGuard = {
+        async check() {
+          controller.abort();
+          throw new Error("aborted");
+        },
+      };
+
+      const events = await run(llm, { inputGuard }, controller.signal);
+
+      expect(events).toEqual([{ type: "error", message: "Request aborted" }]);
+    });
   });
 
   it("emits an error event when the model call fails", async () => {

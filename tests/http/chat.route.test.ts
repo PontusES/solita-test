@@ -47,6 +47,24 @@ describe("POST /api/agent/chat", () => {
     });
   });
 
+  it("returns a refusal with finishReason blocked when the input guardrail blocks", async () => {
+    const llm = useFakeContainer([], {
+      check: async () => ({ category: "misuse", reason: "someone else's mailbox" }),
+    });
+
+    const response = await postChat(JSON.stringify({ message: "open my boss's mailbox" }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      finishReason: "blocked",
+      guardrails: [{ stage: "input", rule: "misuse", action: "blocked" }],
+      toolCalls: [],
+    });
+    expect(body.answer).toMatch(/can't help with that/);
+    expect(llm.requests).toHaveLength(0);
+  });
+
   it.each([
     ["a missing message", "{}"],
     ["an empty message", JSON.stringify({ message: "   " })],
