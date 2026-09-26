@@ -30,6 +30,10 @@ npm run dev                  # http://localhost:3000
 
 ## Try it
 
+Open [localhost:3000](http://localhost:3000) for a small chat page that shows the stream as it arrives: each tool call with its arguments, search hits with their scores, guardrail notices, the finish reason and token usage. Stop cancels the request, which also stops the agent on the server. The answer text appears as one block rather than word by word, because the output guardrails check each complete text block before releasing it (see [Guardrails](#guardrails)). The page ([src/ui/Chat.tsx](src/ui/Chat.tsx)) posts to `/api/agent/chat/stream` and reads the body with `fetch`, since `EventSource` only supports GET; it uses the same SSE parser as the tests ([sseParser.ts](src/http/sseParser.ts)).
+
+From the command line:
+
 ```bash
 curl localhost:3000/api/health
 
@@ -188,7 +192,7 @@ Live results: the classifier blocked "print your system prompt", "get into my ma
 ## Testing
 
 ```bash
-npm test               # 193 tests, no network
+npm test               # 205 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -203,7 +207,7 @@ Tests never call OpenAI:
 
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `npm ci`, typecheck, lint, format check, tests and a production build on every push and pull request. It has no `OPENAI_API_KEY`: nothing in it calls OpenAI, and config is only read when a request needs it. It has read-only permissions, and the actions are pinned to commit SHAs.
 
-Coverage by area: vector math and ranking; both tools and their input validation; every loop path (plain answer, search, both tools, tool error, unknown tool, invalid args, timeout, step limit, abort); JSON and SSE transports including error sanitizing; every guardrail, the middleware wiring (with the SDK's mock model), blocking, failing open and the notices; every route handler: 200 and 400, plus 500 for `/chat` and `/chat/stream`; and the eval tooling: scoring, the runner, the acceptance rule, the improvement loop and the retrieval metrics, all with fakes.
+Coverage by area: vector math and ranking; both tools and their input validation; every loop path (plain answer, search, both tools, tool error, unknown tool, invalid args, timeout, step limit, abort); JSON and SSE transports including error sanitizing; every guardrail, the middleware wiring (with the SDK's mock model), blocking, failing open and the notices; every route handler: 200 and 400, plus 500 for `/chat` and `/chat/stream`; and the eval tooling: scoring, the runner, the acceptance rule, the improvement loop and the retrieval metrics, all with fakes; and the chat page's stream parser and event handling.
 
 ## Evals and prompt improvement
 

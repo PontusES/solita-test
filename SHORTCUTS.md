@@ -48,8 +48,8 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Testing
 
-- **Retrieval quality is measured only by the eval runner.** Unit tests use lexical fake embeddings so they never hit the network; that proves the wiring, not the quality of semantic matches. The eval runner checks it with real models, but it costs money, so it is run on demand rather than on every commit.
-- **No CI pipeline.** The four checks run locally. Next: a GitHub Actions workflow running typecheck, lint, format check and tests on every push.
+- **Retrieval quality is measured with real embeddings only on demand.** Unit tests use lexical fake embeddings so they never hit the network; that proves the wiring, not the quality of semantic matches. `npm run eval:retrieval` measures it with real embeddings in about a second, and the answer evals cover it end to end, but both need an API key and are run by hand.
+- **CI runs the checks, not the evals.** The workflow runs typecheck, lint, format check, tests and a build, with no API key. Next: a scheduled job with the key as a repository secret, running the retrieval evals (almost free) on every push and the answer evals nightly, failing on a drop below the committed baseline.
 - **No end-to-end test against a deployed service.** Next: a small smoke suite against a staging deployment.
 
 ## Evals
@@ -58,6 +58,12 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 - **One run per case by default.** The model is not deterministic: the first baseline run happened to pass "Good morning!", but 5 runs showed it failing 3 times out of 5. `--runs n` averages this out at n times the cost. Next: run 3 to 5 times before accepting any prompt change.
 - **The judge is an LLM too.** Its scores vary and it can share blind spots with the agent, since both are OpenAI models. Hard requirements are therefore deterministic checks, and the judge only grades quality. Next: calibrate the judge on a handful of human graded answers, or use a judge from another provider.
 - **Tool arguments are not checked.** A case checks that `get_escalation_contact` was called and that the exact critical text appears, which implies the severity, but it does not inspect arguments directly. Next: argument level expectations.
+
+## Chat page
+
+- **Answers are shown as plain text.** The model writes Markdown, so `**bold**` and list markers show as typed. Next: a Markdown renderer with HTML disabled, which is a new dependency.
+- **No component tests.** The page's event handling is a pure function with unit tests, and the stream parser is shared with the route tests, but the React component itself was only checked by hand against the live server. Next: Playwright against `next start` with the fake container.
+- **One message at a time, with no history.** It mirrors the single turn API. Next: follows the conversation support under Scope.
 
 ## Guardrails
 

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/agent/chat/stream/route";
 import { setContainerForTests } from "@/container";
-import { parseSse } from "./parseSse";
+import { parseSse } from "@/http/sseParser";
 import { searchThenAnswer, useFakeContainer } from "./testContainer";
 
 function postStream(body: string): Promise<Response> {
