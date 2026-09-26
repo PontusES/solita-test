@@ -159,7 +159,7 @@ Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain Ty
 ## Testing
 
 ```bash
-npm test               # 114 tests, no network
+npm test               # 115 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -177,19 +177,29 @@ Coverage by area: vector math and ranking; both tools and their input validation
 ## Evals and prompt improvement
 
 ```bash
-npm run eval                                   # all 12 cases, 1 run each, about $0.02
+npm run eval                                   # all 13 cases, 1 run each, about $0.02
 npm run eval -- --runs 3 --split holdout       # repeat runs to average out model variance
 npm run eval -- --prompt prompts/candidates/x.md
 ```
 
-The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 12 cases in [cases.ts](evals/cases.ts): 8 train and 4 holdout paraphrases. Each run is scored in two layers:
+The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 13 cases in [cases.ts](evals/cases.ts): 8 train and 5 holdout cases, mostly paraphrases of train cases. Each run is scored in two layers:
 
 1. **Deterministic checks** from the case: which tools must or must not be called, and exact substrings the answer must contain (the escalation texts must appear verbatim).
 2. **An LLM judge** (`gpt-6-sol`, a stronger model than the agent's, to limit self-grading bias) scores the answer against the case's rubric from 0 to 1, seeing the input, the tool trace and the answer.
 
 A run scores 0 if any deterministic check fails, otherwise the judge's score; the judge is skipped for failed runs, which saves cost. A table and token usage are printed, and the full report, including judge reasoning and every retrieval score, is written to `evals/results/`. A real report is committed as [sample.json](evals/results/sample.json).
 
-Current results, from the committed sample: **train 0.866, holdout 0.950**. The one hard failure is the greeting "Hi!", where the model still searched the knowledge base, while the holdout greeting "Good morning!" passed. Scores also move between identical runs: the holdout dip comes from one Teams answer that left out the headset mute switch, which the previous run included. Both are why `--runs` exists and why prompt changes should be measured, not guessed.
+**Fixing the greeting case with the eval runner.** With 5 runs per case, the original prompt made the model search the knowledge base for "Hi!" in 4 of 5 runs, and for the holdout "Good morning!" in 3 of 5. The cause was rule 1, "call `search_knowledge_base` for any question", which the model applied to every message. The rule now applies when the user describes an IT problem or asks how to do something, and says that a greeting, thanks or small talk needs no tool call. To make sure the change did not make the model skip searches it needs, a holdout case with a greeting in front of a real question ("Hi! Since this morning my laptop has been really slow") was added before accepting it.
+
+| 5 runs per case           | Before | After |
+| ------------------------- | ------ | ----- |
+| "Hi!" (train) pass rate   | 0.20   | 1.00  |
+| "Good morning!" (holdout) | 0.40   | 1.00  |
+| Greeting plus question    | 0.80   | 1.00  |
+| Train mean score          | 0.886  | 0.989 |
+| Holdout mean score        | 0.842  | 0.994 |
+
+After the change every case passed its deterministic checks in all 5 runs. The committed sample is a single run with the current prompt (train 0.992, holdout 1.000).
 
 **Calibrating `KB_MIN_SCORE`.** The report records every retrieval score. With the first default of 0.3, the correct article scored 0.55 to 0.70 in every case that had one, while unrelated articles scored 0.32 to 0.41 (0.44 in an earlier smoke test) and were all passed to the model. The threshold is now 0.5, in the gap between the two groups. Two runs at 0.5 scored train 0.875 and 0.866, holdout 1.000 and 0.950, against the 0.3 baseline of train 0.863, holdout 1.000: no regression beyond run to run variance. Each troubleshooting question now gets only its correct article, and outage or off topic questions get "No relevant articles found" instead of loosely related ones.
 

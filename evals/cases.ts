@@ -116,4 +116,12 @@ export const evalCases: EvalCase[] = [
     expect: { toolsNotCalled: [SEARCH, ESCALATE] },
     rubric: "Greets briefly and asks how it can help with an IT problem. No tool calls are needed.",
   },
+  {
+    id: "greeting-with-question-holdout",
+    input: "Hi! Since this morning my laptop has been really slow",
+    split: "holdout",
+    expect: { toolsCalled: [SEARCH], toolsNotCalled: [ESCALATE] },
+    rubric:
+      "Treats the greeting as part of a real IT question: gives the steps from the laptop performance article (restart, close memory heavy apps and tabs, free disk space) and names the article.",
+  },
 ];

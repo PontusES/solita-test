@@ -1,6 +1,6 @@
 {
   "meta": {
-    "createdAt": "2026-09-26T20:06:31.982Z",
+    "createdAt": "2026-09-26T20:14:56.493Z",
     "prompt": "prompts/system.md",
     "chatModel": "gpt-6-luna",
     "judgeModel": "gpt-6-sol",
@@ -16,12 +16,12 @@
       "input": "The printer only prints blank white pages",
       "runs": [
         {
-          "answer": "Based on **“Printer output is empty or faded”**:\n\n1. Check that the toner cartridge is seated firmly. If it’s new, make sure the orange protective strip was removed.\n2. Print a configuration page from the printer menu.\n   - If it’s blank too, the printer needs a new cartridge; Facilities can supply one.\n   - If it prints correctly, reinstall the printer from the self service portal.",
+          "answer": "Based on **“Printer output is empty or faded”**:\n\n1. Open the printer’s front panel. Check that the toner cartridge is seated firmly and, if it’s new, that the orange protective strip has been removed.\n2. Print a configuration page from the printer menu.\n3. If the configuration page is blank too, the printer needs a new cartridge; facilities can supply one. If it prints normally, reinstall the printer from the self service portal.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "printer printing blank white pages troubleshooting",
+                "query": "printer prints blank white pages troubleshooting",
                 "topK": 5
               },
               "result": {
@@ -30,7 +30,7 @@
                     "id": "kb-printer-blank-pages",
                     "title": "Printer output is empty or faded",
                     "content": "When a network printer feeds paper but the sheets come out without any print, the cause is almost always the toner. Open the front panel and check that the cartridge is seated firmly and that the orange protective strip has been removed from a new cartridge. Print a configuration page from the printer menu: if that page is also empty, the device needs a new cartridge, which facilities can supply. If the configuration page looks fine, the problem is in the document or driver, so reinstall the printer from the self service portal.",
-                    "score": 0.632
+                    "score": 0.636
                   }
                 ]
               },
@@ -49,27 +49,27 @@
           ],
           "searchScores": [
             [
-              0.632
+              0.636
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer names the correct article and accurately covers checking the toner cartridge and protective strip, printing a configuration page, and reinstalling the printer from the self-service portal when appropriate. It does not escalate."
+            "reasoning": "The answer names the article and accurately covers checking the toner and protective strip, printing a configuration page, and reinstalling the printer from the self service portal when appropriate. It does not escalate or invent procedures."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1136,
-              "outputTokens": 117,
-              "totalTokens": 1253
+              "inputTokens": 1224,
+              "outputTokens": 125,
+              "totalTokens": 1349
             },
             "judge": {
-              "inputTokens": 459,
-              "outputTokens": 56,
-              "totalTokens": 515
+              "inputTokens": 467,
+              "outputTokens": 57,
+              "totalTokens": 524
             }
           },
-          "durationMs": 5083
+          "durationMs": 4453
         }
       ],
       "meanScore": 1,
@@ -81,12 +81,12 @@
       "input": "The mail server seems to be down for the whole office",
       "runs": [
         {
-          "answer": "The knowledge base doesn’t cover this outage. Since it appears to affect the whole office, treat it as a critical incident and call the IT on-call line:\n\n\"CRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.\"",
+          "answer": "The knowledge base doesn’t cover this outage. Since the whole office appears affected, treat it as critical and call the IT on-call line now:\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "mail server down outage affecting whole office email unavailable troubleshooting and escalation",
+                "query": "mail server down affecting whole office outage troubleshooting and escalation",
                 "topK": 5
               },
               "result": {
@@ -119,22 +119,22 @@
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer identifies the office-wide mail outage as critical, directs the user to call the on-call line immediately, and reproduces the escalation text exactly. It adds no unsupported troubleshooting or contact details."
+            "reasoning": "The answer identifies the office-wide outage as critical, directs the user to call the on-call line immediately, and reproduces the critical escalation text exactly. It avoids unsupported troubleshooting advice and does not bury the escalation."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1699,
-              "outputTokens": 180,
-              "totalTokens": 1879
+              "inputTokens": 1827,
+              "outputTokens": 174,
+              "totalTokens": 2001
             },
             "judge": {
-              "inputTokens": 488,
-              "outputTokens": 55,
-              "totalTokens": 543
+              "inputTokens": 482,
+              "outputTokens": 58,
+              "totalTokens": 540
             }
           },
-          "durationMs": 6252
+          "durationMs": 5026
         }
       ],
       "meanScore": 1,
@@ -146,12 +146,12 @@
       "input": "I already restarted the VPN client and it still doesn't work",
       "runs": [
         {
-          "answer": "According to **“VPN and remote access troubleshooting,”** try these steps:\n\n1. Check that your home internet works by opening a public website.\n2. Sign out of the VPN client, quit it completely, then start it again.\n3. Check that the gateway is `vpn.corp.example.com`.\n4. If you’re on hotel or café Wi‑Fi, try a phone hotspot.\n5. If you see a certificate error, the laptop may need to connect to the domain in the office.\n\nIf it still doesn’t work, contact the Service Desk and include the error message and steps you’ve tried:\n\n\"IT Service Desk\nEmail: servicedesk@example.com\nPortal: https://support.example.com\nOpening hours: Monday to Friday, 08:00 to 17:00.\nInclude a description of the problem, the steps you have already tried, and any error messages.\"",
+          "answer": "The **“VPN and remote access troubleshooting”** article recommends:\n\n1. Check that your internet works by opening a public website.\n2. Sign out of the VPN client, quit it completely, and start it again.\n3. Confirm the gateway is `vpn.corp.example.com`.\n4. If you’re on hotel or café Wi‑Fi, try a phone hotspot. If you see a certificate error, the laptop may need to connect to the office network to sync.\n\nIT Service Desk\nEmail: servicedesk@example.com\nPortal: https://support.example.com\nOpening hours: Monday to Friday, 08:00 to 17:00.\nInclude a description of the problem, the steps you have already tried, and any error messages.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "VPN client not working after restart troubleshooting steps",
+                "query": "VPN client still not working after restarting troubleshooting",
                 "topK": 5
               },
               "result": {
@@ -160,7 +160,7 @@
                     "id": "kb-vpn-remote-access",
                     "title": "VPN and remote access troubleshooting",
                     "content": "Internal systems are only reachable through the corporate VPN when you work outside the office. If the GlobalConnect client fails to establish a tunnel, first confirm that your home internet connection works by opening a public website. Then sign out of the client, quit it completely and start it again. Make sure the gateway is set to vpn.corp.example.com. Hotel and cafe networks sometimes block VPN traffic; switching to a phone hotspot is a quick way to test this. Certificate errors usually mean the laptop has not synced with the domain for a while and must be connected in the office once.",
-                    "score": 0.569
+                    "score": 0.573
                   }
                 ]
               },
@@ -191,30 +191,30 @@
           ],
           "searchScores": [
             [
-              0.569
+              0.573
             ]
           ],
           "judge": {
-            "score": 0.93,
-            "reasoning": "The answer gives the article’s remaining checks, including connectivity, gateway, hotspot, and certificate guidance, without treating the issue as critical. It reproduces the normal Service Desk contact exactly; the only minor flaw is repeating the client restart step the user already tried."
+            "score": 0.94,
+            "reasoning": "The answer covers the article’s remaining checks and reproduces the normal IT Service Desk contact exactly, without treating the issue as critical. It slightly misses the user’s context by repeating the restart instruction without acknowledging they already tried it."
           },
-          "score": 0.93,
+          "score": 0.94,
           "usage": {
             "agent": {
-              "inputTokens": 1921,
-              "outputTokens": 233,
-              "totalTokens": 2154
+              "inputTokens": 2053,
+              "outputTokens": 204,
+              "totalTokens": 2257
             },
             "judge": {
-              "inputTokens": 639,
-              "outputTokens": 70,
-              "totalTokens": 709
+              "inputTokens": 609,
+              "outputTokens": 99,
+              "totalTokens": 708
             }
           },
-          "durationMs": 6751
+          "durationMs": 6485
         }
       ],
-      "meanScore": 0.93,
+      "meanScore": 0.94,
       "passRate": 1
     },
     {
@@ -223,12 +223,12 @@
       "input": "How does our vacation policy work?",
       "runs": [
         {
-          "answer": "I couldn’t find information about the vacation policy in the IT knowledge base, so I can’t verify how it works. I can provide the appropriate contact for help if you’d like.",
+          "answer": "The knowledge base doesn’t cover the vacation policy, so I can’t confirm how it works. I can provide the IT support contact if you’d like.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "vacation policy PTO annual leave accrual requesting time off",
+                "query": "vacation policy paid time off vacation accrual request eligibility carryover",
                 "topK": 5
               },
               "result": {
@@ -249,22 +249,22 @@
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer clearly states that the IT knowledge base has no vacation policy information and does not invent any details. It offers to provide an appropriate contact for help."
+            "reasoning": "The answer accurately states that the knowledge base has no vacation policy information and does not invent any details. It offers a contact as an alternative."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1019,
-              "outputTokens": 74,
-              "totalTokens": 1093
+              "inputTokens": 1109,
+              "outputTokens": 70,
+              "totalTokens": 1179
             },
             "judge": {
-              "inputTokens": 287,
-              "outputTokens": 47,
-              "totalTokens": 334
+              "inputTokens": 283,
+              "outputTokens": 44,
+              "totalTokens": 327
             }
           },
-          "durationMs": 4829
+          "durationMs": 3596
         }
       ],
       "meanScore": 1,
@@ -276,46 +276,41 @@
       "input": "Hi!",
       "runs": [
         {
-          "answer": "Hi! What can I help you with?",
-          "toolCalls": [
-            {
-              "name": "search_knowledge_base",
-              "args": {
-                "query": "Greeting or general assistance request; determine whether there is an employee IT helpdesk welcome article."
-              },
-              "result": {
-                "results": [],
-                "note": "No relevant articles found."
-              },
-              "isError": false
-            }
-          ],
+          "answer": "Hi! What IT problem can I help you with?",
+          "toolCalls": [],
           "checks": [
             {
               "check": "does not call search_knowledge_base",
-              "passed": false
+              "passed": true
             },
             {
               "check": "does not call get_escalation_contact",
               "passed": true
             }
           ],
-          "searchScores": [
-            []
-          ],
-          "score": 0,
+          "searchScores": [],
+          "judge": {
+            "score": 1,
+            "reasoning": "The answer briefly greets the user and asks how it can help with an IT problem. No tool calls were needed or made."
+          },
+          "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1011,
-              "outputTokens": 48,
-              "totalTokens": 1059
+              "inputTokens": 519,
+              "outputTokens": 14,
+              "totalTokens": 533
+            },
+            "judge": {
+              "inputTokens": 207,
+              "outputTokens": 42,
+              "totalTokens": 249
             }
           },
-          "durationMs": 2062
+          "durationMs": 2262
         }
       ],
-      "meanScore": 0,
-      "passRate": 0
+      "meanScore": 1,
+      "passRate": 1
     },
     {
       "id": "new-monitor",
@@ -323,13 +318,12 @@
       "input": "How do I get a second monitor for my desk?",
       "runs": [
         {
-          "answer": "Order a monitor through the hardware catalogue in the self-service portal. Standard items within your role’s equipment allowance are approved automatically and usually arrive at the office within five working days. If it’s outside the catalogue or over your allowance, the portal will request your line manager’s approval.\n\nBased on **“Requesting new equipment.”**",
+          "answer": "Order a monitor through the hardware catalogue in the self service portal. Standard items within your role’s equipment allowance are approved automatically and usually arrive at the office within five working days. If it’s outside the catalogue or above your allowance, the portal will request your line manager’s approval.\n\nBased on **“Requesting new equipment.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "request or obtain a second monitor for my desk, hardware equipment request process",
-                "topK": 5
+                "query": "How to request or obtain an additional second monitor for an employee desk; hardware equipment request process"
               },
               "result": {
                 "results": [
@@ -337,7 +331,7 @@
                     "id": "kb-hardware-ordering",
                     "title": "Requesting new equipment",
                     "content": "Laptops, monitors, docking stations, headsets and other peripherals are ordered through the hardware catalogue in the self service portal. Standard items that fall within the equipment allowance for your role are approved automatically, and delivery to the office usually takes five working days. Anything outside the catalogue, or above the allowance, requires approval from your line manager, which the portal requests on your behalf. Laptops are replaced on a four year cycle; earlier replacement is only possible if the device is faulty and has been assessed by the service desk.",
-                    "score": 0.63
+                    "score": 0.616
                   }
                 ]
               },
@@ -356,27 +350,27 @@
           ],
           "searchScores": [
             [
-              0.63
+              0.616
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer explains how to order a monitor through the self-service portal’s hardware catalogue, states when line manager approval is needed, and names the supporting article. Its additional delivery and automatic-approval details are grounded in the search result."
+            "reasoning": "The answer explains how to order a monitor through the hardware catalogue in the self service portal, notes manager approval for requests outside the catalogue or allowance, and names the relevant article. Its additional delivery detail is supported by the tool result."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1151,
-              "outputTokens": 106,
-              "totalTokens": 1257
+              "inputTokens": 1238,
+              "outputTokens": 105,
+              "totalTokens": 1343
             },
             "judge": {
-              "inputTokens": 440,
+              "inputTokens": 439,
               "outputTokens": 62,
-              "totalTokens": 502
+              "totalTokens": 501
             }
           },
-          "durationMs": 5579
+          "durationMs": 4408
         }
       ],
       "meanScore": 1,
@@ -388,12 +382,12 @@
       "input": "I clicked a link in a strange email and typed my password on the page it opened",
       "runs": [
         {
-          "answer": "Treat this as a security incident:\n\n1. **Change your password immediately.**\n2. **Disconnect the affected device from the network, but don’t switch it off.**\n3. **Call IT on-call now.**\n4. If the email is still in Outlook, use the **Report** button; don’t forward it to colleagues.\n\nBased on **“Handling suspicious messages.”**\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
+          "answer": "This is a security incident. **Disconnect the affected device from the network, but do not switch it off. Change your password immediately.** Use Outlook’s **Report** button to report the suspicious message; don’t forward it to colleagues.\n\nBased on **“Handling suspicious messages.”**\n\n\"CRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.\"",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "phishing clicked suspicious email link entered password credentials incident immediate actions report account security",
+                "query": "Clicked suspicious phishing email link and entered password on website; account credential compromise response steps and security incident reporting",
                 "topK": 5
               },
               "result": {
@@ -402,7 +396,7 @@
                     "id": "kb-phishing-report",
                     "title": "Handling suspicious messages",
                     "content": "Phishing messages try to trick you into clicking a link, opening an attachment or sharing your credentials, often by pretending to be a manager, a supplier or IT. Do not click links or open attachments in a message you did not expect. Use the Report button in the Outlook toolbar, which sends the message to the security team and removes it from your inbox. If you already entered your password on a suspicious page, change your password immediately and treat it as a security incident. Never forward the message to colleagues as a warning.",
-                    "score": 0.661
+                    "score": 0.636
                   }
                 ]
               },
@@ -429,27 +423,27 @@
           ],
           "searchScores": [
             [
-              0.661
+              0.636
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer treats the password disclosure as a security incident, tells the user to change their password immediately, and directs them to the critical on-call contact. It reproduces the critical escalation text exactly and grounds its other advice in the tool results."
+            "reasoning": "The answer treats the credential entry as a security incident, tells the user to change their password immediately, and reproduces the critical escalation text exactly. Its additional guidance is grounded in the tool results."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1961,
-              "outputTokens": 228,
-              "totalTokens": 2189
+              "inputTokens": 2103,
+              "outputTokens": 213,
+              "totalTokens": 2316
             },
             "judge": {
-              "inputTokens": 652,
-              "outputTokens": 87,
-              "totalTokens": 739
+              "inputTokens": 636,
+              "outputTokens": 86,
+              "totalTokens": 722
             }
           },
-          "durationMs": 5891
+          "durationMs": 7352
         }
       ],
       "meanScore": 1,
@@ -485,22 +479,22 @@
           "searchScores": [],
           "judge": {
             "score": 1,
-            "reasoning": "The answer reproduces the normal IT Service Desk contact exactly as provided by the tool, including the email, portal, opening hours, and submission guidance. It adds no unnecessary troubleshooting or invented details."
+            "reasoning": "The answer reproduces the normal IT Service Desk contact exactly as returned by the tool, including its hours and submission guidance. It adds no troubleshooting or invented details."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1053,
+              "inputTokens": 1141,
               "outputTokens": 78,
-              "totalTokens": 1131
+              "totalTokens": 1219
             },
             "judge": {
               "inputTokens": 316,
-              "outputTokens": 55,
-              "totalTokens": 371
+              "outputTokens": 48,
+              "totalTokens": 364
             }
           },
-          "durationMs": 3589
+          "durationMs": 3231
         }
       ],
       "meanScore": 1,
@@ -512,12 +506,12 @@
       "input": "Nobody can hear me in Teams meetings",
       "runs": [
         {
-          "answer": "In the Teams meeting, open **Device settings** and make sure the correct microphone is selected and not muted. If you’re using a headset connected through a dock, connect it directly to your laptop. You can also use Teams’ **test call** to check the microphone.\n\nBased on **“Sound and microphone problems in Teams calls.”**",
+          "answer": "In the Teams meeting, open **Device settings** and confirm the correct microphone is selected. If you’re using a headset, check its physical mute switch; if it’s connected through a docking station, connect it directly to your laptop. Then use Teams’ **Test call** to check the microphone.\n\nBased on **“Sound and microphone problems in Teams calls.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Nobody can hear my microphone/audio in Microsoft Teams meetings troubleshooting microphone permissions device selection mute"
+                "query": "Nobody can hear me in Microsoft Teams meetings microphone audio troubleshooting"
               },
               "result": {
                 "results": [
@@ -525,7 +519,7 @@
                     "id": "kb-teams-audio",
                     "title": "Sound and microphone problems in Teams calls",
                     "content": "If other participants cannot hear you, or you cannot hear them, first open the device settings in Teams during the call and confirm that the correct speaker and microphone are selected. Headsets connected through a docking station are sometimes not picked up, so try connecting them directly to the laptop. Check that the microphone is not muted by a physical switch on the headset. Use the test call function in the settings to record and play back a short message. Bluetooth headsets should be paired again if the audio is choppy or keeps dropping out.",
-                    "score": 0.644
+                    "score": 0.698
                   }
                 ]
               },
@@ -544,30 +538,30 @@
           ],
           "searchScores": [
             [
-              0.644
+              0.698
             ]
           ],
           "judge": {
-            "score": 0.8,
-            "reasoning": "The answer names the correct article and covers microphone selection, connecting the headset directly instead of through a dock, and using a test call. It mentions checking mute status but does not specifically tell the user to check the headset’s physical mute switch."
+            "score": 1,
+            "reasoning": "The answer names the knowledge-base article and includes all four relevant steps: select the correct microphone, check the headset mute switch, bypass the dock, and use a test call. It stays grounded in the article and is concise."
           },
-          "score": 0.8,
+          "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1144,
+              "inputTokens": 1227,
               "outputTokens": 105,
-              "totalTokens": 1249
+              "totalTokens": 1332
             },
             "judge": {
               "inputTokens": 455,
-              "outputTokens": 97,
-              "totalTokens": 552
+              "outputTokens": 61,
+              "totalTokens": 516
             }
           },
-          "durationMs": 5078
+          "durationMs": 3580
         }
       ],
-      "meanScore": 0.8,
+      "meanScore": 1,
       "passRate": 1
     },
     {
@@ -576,12 +570,12 @@
       "input": "Around 40 people in our department cannot log in to anything since this morning",
       "runs": [
         {
-          "answer": "I couldn’t find a relevant article in the knowledge base. Since this is affecting around 40 people, treat it as a critical incident and call the IT on-call line now:\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
+          "answer": "The knowledge base doesn’t cover this outage. Since about 40 people are affected, treat it as a critical incident and call the IT on-call line now.\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Department-wide outage many people unable to log in to any systems since this morning; login authentication outage troubleshooting and escalation",
+                "query": "department-wide outage many employees unable to log in to any services since this morning; troubleshooting and escalation",
                 "topK": 5
               },
               "result": {
@@ -619,17 +613,17 @@
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1731,
-              "outputTokens": 193,
-              "totalTokens": 1924
+              "inputTokens": 1857,
+              "outputTokens": 186,
+              "totalTokens": 2043
             },
             "judge": {
-              "inputTokens": 495,
+              "inputTokens": 488,
               "outputTokens": 53,
-              "totalTokens": 548
+              "totalTokens": 541
             }
           },
-          "durationMs": 6353
+          "durationMs": 5325
         }
       ],
       "meanScore": 1,
@@ -641,12 +635,13 @@
       "input": "The sheets come out of the printer completely empty",
       "runs": [
         {
-          "answer": "For a network printer, check that the toner cartridge is seated firmly and, if it’s new, that the orange protective strip has been removed. Print a configuration page from the printer menu:\n\n- If it’s blank too, the printer needs a new cartridge; Facilities can supply one.\n- If it prints normally, reinstall the printer from the self-service portal.\n\nBased on **“Printer output is empty or faded.”**",
+          "answer": "Check that the toner cartridge is seated firmly and, if it’s new, that the orange protective strip has been removed. Then print a configuration page from the printer menu. If it’s blank too, the printer needs a new cartridge; facilities can supply one. If it prints normally, reinstall the printer from the self service portal.\n\nBased on **“Printer output is empty or faded.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Printer outputs completely blank empty sheets troubleshooting"
+                "query": "Printer prints completely blank pages sheets come out empty troubleshooting",
+                "topK": 5
               },
               "result": {
                 "results": [
@@ -654,7 +649,7 @@
                     "id": "kb-printer-blank-pages",
                     "title": "Printer output is empty or faded",
                     "content": "When a network printer feeds paper but the sheets come out without any print, the cause is almost always the toner. Open the front panel and check that the cartridge is seated firmly and that the orange protective strip has been removed from a new cartridge. Print a configuration page from the printer menu: if that page is also empty, the device needs a new cartridge, which facilities can supply. If the configuration page looks fine, the problem is in the document or driver, so reinstall the printer from the self service portal.",
-                    "score": 0.672
+                    "score": 0.682
                   }
                 ]
               },
@@ -673,27 +668,27 @@
           ],
           "searchScores": [
             [
-              0.672
+              0.682
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer correctly matches the blank-page printer article and gives the toner cartridge, configuration-page, and reinstall steps. It stays grounded in the article and does not escalate."
+            "reasoning": "The answer correctly matches the blank-page printer article and covers the toner cartridge, configuration page, and reinstall steps. It accurately explains both outcomes of the configuration-page test without escalating or inventing details."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1136,
-              "outputTokens": 112,
-              "totalTokens": 1248
+              "inputTokens": 1232,
+              "outputTokens": 114,
+              "totalTokens": 1346
             },
             "judge": {
-              "inputTokens": 444,
-              "outputTokens": 49,
-              "totalTokens": 493
+              "inputTokens": 446,
+              "outputTokens": 55,
+              "totalTokens": 501
             }
           },
-          "durationMs": 4259
+          "durationMs": 4363
         }
       ],
       "meanScore": 1,
@@ -705,7 +700,7 @@
       "input": "Good morning!",
       "runs": [
         {
-          "answer": "Good morning! How can I help you today?",
+          "answer": "Good morning! What IT problem can I help you with?",
           "toolCalls": [],
           "checks": [
             {
@@ -720,22 +715,87 @@
           "searchScores": [],
           "judge": {
             "score": 1,
-            "reasoning": "The answer greets the user briefly and asks how it can help. No tool calls were needed."
+            "reasoning": "The answer briefly returns the greeting and asks how it can help with an IT problem. No tool calls were needed or made."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 476,
-              "outputTokens": 13,
-              "totalTokens": 489
+              "inputTokens": 520,
+              "outputTokens": 15,
+              "totalTokens": 535
             },
             "judge": {
-              "inputTokens": 207,
-              "outputTokens": 36,
-              "totalTokens": 243
+              "inputTokens": 209,
+              "outputTokens": 41,
+              "totalTokens": 250
             }
           },
-          "durationMs": 2219
+          "durationMs": 2294
+        }
+      ],
+      "meanScore": 1,
+      "passRate": 1
+    },
+    {
+      "id": "greeting-with-question-holdout",
+      "split": "holdout",
+      "input": "Hi! Since this morning my laptop has been really slow",
+      "runs": [
+        {
+          "answer": "Try these steps:\n\n- Restart your laptop to finish any pending updates.\n- In Task Manager, check which apps are using the most memory and close ones you don’t need.\n- Free up disk space, aiming to keep at least 20% available. Remove old downloads and empty the recycle bin.\n- Close browser tabs you aren’t using.\n\nIf it’s still slow after that, it may need a hardware check by the service desk.\n\nBased on **“Improving laptop responsiveness.”**",
+          "toolCalls": [
+            {
+              "name": "search_knowledge_base",
+              "args": {
+                "query": "Laptop running very slow performance troubleshooting since this morning",
+                "topK": 5
+              },
+              "result": {
+                "results": [
+                  {
+                    "id": "kb-laptop-performance",
+                    "title": "Improving laptop responsiveness",
+                    "content": "Computers become sluggish over time when they are rarely restarted, when disk space runs low or when many applications run at once. Restart the laptop at least once a week, because updates are only finished during a restart. Open Task Manager to see which applications use the most memory and close the ones you do not need. Keep at least 20 percent of the disk free by removing old downloads and emptying the recycle bin. Browser tabs use a lot of memory as well. If the device is still slow after these steps, it may need a hardware check by the service desk.",
+                    "score": 0.556
+                  }
+                ]
+              },
+              "isError": false
+            }
+          ],
+          "checks": [
+            {
+              "check": "calls search_knowledge_base",
+              "passed": true
+            },
+            {
+              "check": "does not call get_escalation_contact",
+              "passed": true
+            }
+          ],
+          "searchScores": [
+            [
+              0.556
+            ]
+          ],
+          "judge": {
+            "score": 1,
+            "reasoning": "The answer names the knowledge-base article and gives all requested steps: restart, close memory-heavy apps and tabs, and free disk space. Its additional details and service-desk suggestion are grounded in the article."
+          },
+          "score": 1,
+          "usage": {
+            "agent": {
+              "inputTokens": 1243,
+              "outputTokens": 133,
+              "totalTokens": 1376
+            },
+            "judge": {
+              "inputTokens": 489,
+              "outputTokens": 57,
+              "totalTokens": 546
+            }
+          },
+          "durationMs": 3915
         }
       ],
       "meanScore": 1,
@@ -745,29 +805,29 @@
   "summary": {
     "train": {
       "cases": 8,
-      "meanScore": 0.86625,
-      "passRate": 0.875
+      "meanScore": 0.9924999999999999,
+      "passRate": 1
     },
     "holdout": {
-      "cases": 4,
-      "meanScore": 0.95,
+      "cases": 5,
+      "meanScore": 1,
       "passRate": 1
     },
     "all": {
-      "cases": 12,
-      "meanScore": 0.8941666666666667,
-      "passRate": 0.9166666666666666
+      "cases": 13,
+      "meanScore": 0.9953846153846153,
+      "passRate": 1
     },
     "tokens": {
       "agent": {
-        "inputTokens": 15438,
-        "outputTokens": 1487,
-        "totalTokens": 16925
+        "inputTokens": 17293,
+        "outputTokens": 1536,
+        "totalTokens": 18829
       },
       "judge": {
-        "inputTokens": 4882,
-        "outputTokens": 667,
-        "totalTokens": 5549
+        "inputTokens": 5526,
+        "outputTokens": 763,
+        "totalTokens": 6289
       }
     }
   }
