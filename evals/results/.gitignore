@@ -1,0 +1,4 @@
+# Eval reports are local artifacts; only the sample is committed.
+*
+!.gitignore
+!sample.json

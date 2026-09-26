@@ -19,6 +19,7 @@ npm run dev                  # http://localhost:3000
 | `OPENAI_API_KEY`         | none, required           | Read on the first agent request, not at build time       |
 | `OPENAI_CHAT_MODEL`      | `gpt-6-luna`             | Chat model                                               |
 | `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for the knowledge base                   |
+| `EVAL_JUDGE_MODEL`       | `gpt-6-sol`              | Judge model, only used by `npm run eval`                 |
 | `AGENT_MAX_STEPS`        | `5`                      | Maximum model calls per request                          |
 | `TOOL_TIMEOUT_MS`        | `10000`                  | Per tool call                                            |
 | `KB_TOP_K`               | `3`                      | Default number of articles returned by a search          |
@@ -158,7 +159,7 @@ Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain Ty
 ## Testing
 
 ```bash
-npm test               # 90 tests, no network
+npm test               # 114 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -175,7 +176,22 @@ Coverage by area: vector math and ranking; both tools and their input validation
 
 ## Evals and prompt improvement
 
-The eval runner (P1) and the prompt self-improver (P2) are not built yet, see [SHORTCUTS.md](SHORTCUTS.md). Manual smoke tests with real models already show why they matter: an irrelevant article passed the `KB_MIN_SCORE` threshold at 0.32, and the model searched the knowledge base even for a plain "Hi!".
+```bash
+npm run eval                                   # all 12 cases, 1 run each, about $0.02
+npm run eval -- --runs 3 --split holdout       # repeat runs to average out model variance
+npm run eval -- --prompt prompts/candidates/x.md
+```
+
+The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 12 cases in [cases.ts](evals/cases.ts): 8 train and 4 holdout paraphrases. Each run is scored in two layers:
+
+1. **Deterministic checks** from the case: which tools must or must not be called, and exact substrings the answer must contain (the escalation texts must appear verbatim).
+2. **An LLM judge** (`gpt-6-sol`, a stronger model than the agent's, to limit self-grading bias) scores the answer against the case's rubric from 0 to 1, seeing the input, the tool trace and the answer.
+
+A run scores 0 if any deterministic check fails, otherwise the judge's score; the judge is skipped for failed runs, which saves cost. A table and token usage are printed, and the full report, including judge reasoning and every retrieval score, is written to `evals/results/`. A real report is committed as [sample.json](evals/results/sample.json).
+
+Baseline with the current prompt: **train 0.863, holdout 1.000**. The one failure is the greeting "Hi!", where the model still searched the knowledge base, while the holdout greeting "Good morning!" passed. The same prompt behaving differently on near identical inputs is exactly why `--runs` exists and why prompt changes should be measured, not guessed.
+
+The prompt self-improver (P2) is not built yet, see [SHORTCUTS.md](SHORTCUTS.md).
 
 ## Versions
 

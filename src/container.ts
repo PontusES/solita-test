@@ -1,7 +1,7 @@
 import { createOpenAiLlmClient } from "./agent/llm/openAiClient";
 import type { AgentDeps } from "./agent/runAgent";
 import { loadSystemPrompt } from "./agent/systemPrompt";
-import { getConfig } from "./config";
+import { getConfig, type Config } from "./config";
 import { articles } from "./knowledge/articles";
 import { OpenAiEmbeddingProvider } from "./knowledge/embeddings";
 import { createLogger, type Logger } from "./logger";
@@ -14,10 +14,9 @@ export interface Container {
   logger: Logger;
 }
 
-// The only place that reads config and picks real implementations. Everything below it
-// receives its dependencies, which is what lets tests swap in fakes.
-async function buildContainer(): Promise<Container> {
-  const config = getConfig();
+// The production wiring of the agent. Used by the HTTP container and by the eval runner,
+// which passes a different prompt but must otherwise test exactly what runs in production.
+export function createAgentDeps(config: Config, systemPrompt: string): AgentDeps {
   const embeddings = new OpenAiEmbeddingProvider({
     apiKey: config.OPENAI_API_KEY,
     modelId: config.OPENAI_EMBEDDING_MODEL,
@@ -33,16 +32,23 @@ async function buildContainer(): Promise<Container> {
   ]);
 
   return {
-    agentDeps: {
-      llm: createOpenAiLlmClient({
-        apiKey: config.OPENAI_API_KEY,
-        modelId: config.OPENAI_CHAT_MODEL,
-      }),
-      tools,
-      systemPrompt: await loadSystemPrompt(),
-      maxSteps: config.AGENT_MAX_STEPS,
-      toolTimeoutMs: config.TOOL_TIMEOUT_MS,
-    },
+    llm: createOpenAiLlmClient({
+      apiKey: config.OPENAI_API_KEY,
+      modelId: config.OPENAI_CHAT_MODEL,
+    }),
+    tools,
+    systemPrompt,
+    maxSteps: config.AGENT_MAX_STEPS,
+    toolTimeoutMs: config.TOOL_TIMEOUT_MS,
+  };
+}
+
+// The only place that reads config and picks real implementations. Everything below it
+// receives its dependencies, which is what lets tests swap in fakes.
+async function buildContainer(): Promise<Container> {
+  const config = getConfig();
+  return {
+    agentDeps: createAgentDeps(config, await loadSystemPrompt()),
     logger: createLogger({ service: "it-helpdesk-agent" }),
   };
 }

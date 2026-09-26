@@ -2,11 +2,11 @@
 
 The 3 hour time cap was treated as the customer's budget. Work was prioritized so that whatever existed when time ran out was complete and working:
 
-| Priority | Scope                                                                               | Status                                         |
-| -------- | ----------------------------------------------------------------------------------- | ---------------------------------------------- |
-| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built                                          |
-| P1       | OpenAPI spec and Swagger UI, eval runner                                            | OpenAPI and Swagger built, eval runner not yet |
-| P2       | Prompt self-improver                                                                | Not yet                                        |
+| Priority | Scope                                                                               | Status  |
+| -------- | ----------------------------------------------------------------------------------- | ------- |
+| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built   |
+| P1       | OpenAPI spec and Swagger UI, eval runner                                            | Built   |
+| P2       | Prompt self-improver                                                                | Not yet |
 
 Everything below is a deliberate shortcut: what was done, why it is acceptable for this case, and what would come next with more time.
 
@@ -35,7 +35,7 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 - **Hardcoded escalation text.** The contact details are fictional constants in [getEscalationContact.ts](src/tools/getEscalationContact.ts). Next: read them from the on-call or service desk system, so they are always current.
 - **A small hand-written knowledge base.** Twelve short articles in [articles.ts](src/knowledge/articles.ts), one embedding per article. Next: ingest the real wiki, split long pages into chunks, and re-index when pages change.
-- **`KB_MIN_SCORE` is not calibrated.** It is set to 0.3 as a starting point. A smoke test showed an irrelevant article passing at 0.32, while correct matches scored between 0.57 and 0.69. Next: set it from the eval runner's results.
+- **`KB_MIN_SCORE` is calibrated on very little data.** In the baseline eval, the correct article scored 0.55 to 0.70 and unrelated articles 0.32 to 0.41 (0.44 in an earlier smoke test), so the default of 0.3 lets irrelevant articles through. Next: more eval cases before trusting any single threshold; a reranker would make the cut less sensitive.
 
 ## Agent behaviour
 
@@ -45,17 +45,23 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Testing
 
-- **Retrieval quality is only checked manually.** Unit tests use lexical fake embeddings so they never hit the network; that proves the wiring, not the quality of semantic matches. Next: the eval runner (P1) measures it with real models.
+- **Retrieval quality is measured only by the eval runner.** Unit tests use lexical fake embeddings so they never hit the network; that proves the wiring, not the quality of semantic matches. The eval runner checks it with real models, but it costs money, so it is run on demand rather than on every commit.
 - **No CI pipeline.** The four checks run locally. Next: a GitHub Actions workflow running typecheck, lint, format check and tests on every push.
 - **No end-to-end test against a deployed service.** Next: a small smoke suite against a staging deployment.
 
+## Evals
+
+- **A small eval set.** 12 cases (8 train, 4 holdout) is enough to catch regressions in the main behaviours, not to measure quality with statistical confidence. Next: grow it from real questions, with several paraphrases per intent.
+- **One run per case by default.** The model is not deterministic: in the baseline, "Hi!" triggered a search while "Good morning!" did not. `--runs n` averages this out at n times the cost. Next: run 3 to 5 times before accepting any prompt change.
+- **The judge is an LLM too.** Its scores vary and it can share blind spots with the agent, since both are OpenAI models. Hard requirements are therefore deterministic checks, and the judge only grades quality. Next: calibrate the judge on a handful of human graded answers, or use a judge from another provider.
+- **Tool arguments are not checked.** A case checks that `get_escalation_contact` was called and that the exact critical text appears, which implies the severity, but it does not inspect arguments directly. Next: argument level expectations.
+
 ## Prompt
 
-- **The prompt makes the model search even for greetings.** Rule 1 says to search for any question, and the model applies that literally to "Hi!". It is not fixed by hand on purpose: changes to the prompt should be driven by the eval runner and the prompt improver, so they are measurably better and do not break other cases.
+- **The prompt sometimes makes the model search even for greetings.** Rule 1 says to search for any question; in the baseline eval the model applied that literally to "Hi!" but not to "Good morning!". It is not fixed by hand on purpose: changes to the prompt should be driven by the eval runner and the prompt improver, so they are measurably better and do not break other cases.
 
 ## Not built yet
 
-- **Eval runner (P1).** Next: about 12 cases split into train and holdout, deterministic checks on tool usage and exact escalation text, plus an LLM judge with a rubric.
 - **Prompt self-improver (P2).** Next: revise the prompt from failing train cases, and accept a candidate only if train improves and holdout does not get worse.
 
 ## API docs

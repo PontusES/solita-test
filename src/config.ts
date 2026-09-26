@@ -9,6 +9,8 @@ const configSchema = z.object({
   KB_MIN_SCORE: z.coerce.number().min(-1).max(1).default(0.3),
   OPENAI_CHAT_MODEL: z.string().min(1).default("gpt-6-luna"),
   OPENAI_EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
+  // Only used by the eval runner and the prompt improver.
+  EVAL_JUDGE_MODEL: z.string().min(1).default("gpt-6-sol"),
 });
 
 export type Config = z.infer<typeof configSchema>;
