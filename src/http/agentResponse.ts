@@ -2,7 +2,7 @@ import { collect } from "../agent/collect";
 import { runAgent } from "../agent/runAgent";
 import { getContainer } from "../container";
 import { createLogger } from "../logger";
-import { problemResponse } from "./problem";
+import { agentFailedProblem } from "./problem";
 
 // Used when the container itself cannot be built, for example because the API key is missing.
 const fallbackLogger = createLogger({ service: "it-helpdesk-agent" });
@@ -43,11 +43,6 @@ export async function respondWithAgentResult(message: string, request: Request):
       log.error("agent request failed", fields);
     }
     // Details stay in the logs; the client gets a generic message and an id to quote.
-    return problemResponse(
-      500,
-      "Internal Server Error",
-      { detail: "The agent could not answer the request.", requestId },
-      { "x-request-id": requestId },
-    );
+    return agentFailedProblem(requestId);
   }
 }
