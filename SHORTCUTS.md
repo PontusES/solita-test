@@ -13,6 +13,53 @@ The guardrails extension goes beyond the original 3 hour budget; it was a delibe
 
 Everything below is a deliberate shortcut: what was done, why it is acceptable for this case, and what would come next with more time.
 
+## Deliberately left unbuilt
+
+Four features were left out on purpose. Each is worth more as a plan than as more code to review, and each builds on a seam that already exists.
+
+### 1. Server side conversation memory
+
+Today the client sends up to 20 earlier turns with every request (see Scope). That is enough for follow ups, but the history is unsigned, grows the token cost per message, and is lost on reload.
+
+- **Conversations with an id.** `POST /api/agent/chat` returns a `conversationId`; later requests send only the id and the new message. Turns are stored in Postgres (or Redis with a TTL), keyed by the SSO user, so nobody can read or continue someone else's conversation. `runAgent` does not change: the route loads the turns and passes them as `history`, exactly as now.
+- **Store what the model saw, not what the client claims.** Saving the turns server side, including tool calls and results, removes the unsigned history problem and lets a follow up reuse the articles it already found instead of searching again.
+- **Bounded context.** Keep the last few turns verbatim and replace older ones with a short summary written by a cheap model call, instead of dropping them at 20.
+- **No long term "memory" of the user from free text.** Facts that matter across conversations (the user's laptop model, open tickets) should come from the systems that own them, through tools, not from things the model decided to remember.
+- **Retention and privacy.** A retention period (for example 30 days), deletion on request, and secrets redacted before storage, reusing `redactSecrets`.
+- **Evals.** Multi turn eval cases already exist (`history` in [cases.ts](evals/cases.ts)); add cases where the answer depends on a turn that has been summarised.
+
+### 2. Unanswered questions to support, so they can extend the documentation
+
+The agent already knows when it could not help: the search returned "No relevant articles found", or it escalated after an empty search. Today that knowledge disappears after the response.
+
+- **Capture.** When a run ends with every search empty (or escalates after one), store the question, the agent's search queries, the best retrieval score and a timestamp. Secrets are already redacted by then; also strip names and email addresses before storing. Opt in per deployment, since it stores user text.
+- **Group, do not list.** Once a week, embed the stored questions and cluster them (the embedding provider and cosine similarity already exist), so support sees "23 questions about Windows Update hanging" instead of 23 rows. Each cluster gets a label from a single model call and three example phrasings.
+- **Deliver where support works.** A weekly report or tickets in their queue (ServiceNow, Jira), not a new dashboard nobody opens. "Near misses", where the best score was just under `KB_MIN_SCORE`, go in a separate list: those point at an article that exists but is worded differently, which is a fix to the article, not a new one.
+- **Close the loop.** When support writes the new article, the clustered example questions become [retrieval eval cases](evals/retrievalCases.ts) for it, so the fix is measured and cannot silently regress.
+- **Measure it.** The share of runs with no relevant article, over time, is the metric for whether the documentation is keeping up.
+
+### 3. OpenTelemetry tracing
+
+Logs today are one JSON line per event with a request id (see Observability). That answers "what happened" for one request, but not "where does the time and money go".
+
+- **Setup.** `instrumentation.ts` with `registerOTel` from `@vercel/otel`, as the [Next.js guide](node_modules/next/dist/docs/01-app/02-guides/open-telemetry.md) describes, exporting OTLP to whatever the customer runs (Azure Monitor, Grafana Tempo, Honeycomb, or Langfuse for LLM specific views). Next.js then creates the HTTP spans itself.
+- **Our own spans** around the parts that are ours: `agent.run` as the root (request id, finish reason, steps, total tokens), `agent.step` per model call, `tool.execute` per tool (name, duration, isError, the retrieval scores for searches) and the input guard. Guardrail notices become span events, so a blocked request is visible in the trace without its text.
+- **SDK spans for the model calls.** The AI SDK's `telemetry` option on `streamText`, `generateText` and `embedMany`, with a `functionId` per role (agent step, input guard, embeddings, judge), adds spans with the model, token usage and timings.
+- **No user text in traces by default.** `recordInputs: false` and `recordOutputs: false`, because questions can contain personal data and traces are usually kept longer and seen by more people than logs. Turn them on only in a test environment.
+- **Connect logs and traces.** Put the trace id in every log line and in the `x-request-id` response header, and accept a trusted incoming trace context.
+- **What to look at first:** time to first token, p95 latency by step, tokens and cost per request, how often each guardrail fires, and how often the classifier fails open.
+
+### 4. Tool approval
+
+Both tools only read, so there is nothing to approve yet. Approval becomes necessary the day the agent gets a tool that acts: resetting a password, creating a ticket, ordering hardware.
+
+- **Declared on the tool.** A `requiresApproval` flag (or a function of the arguments, for example only for orders above the allowance) on the `Tool` interface, next to its schema. The model cannot change it.
+- **The loop pauses.** When the model calls such a tool, `runAgent` does not execute it. It emits a `tool-approval-request` event with the tool name and the validated arguments, and ends with a new finish reason, `awaiting-approval`. The chat page shows what will happen, in plain words, with Approve and Deny buttons.
+- **Approval is a new request, and it must be tamper proof.** Because the server is stateless today, the approval would come back from the client, so the pending call is signed on the server (an HMAC over the tool name, arguments, user and expiry) and verified before it runs; the AI SDK has a similar mechanism (`toolApproval` with an approval secret). With server side conversations (item 1) the pending call is simply stored and approved by id.
+- **Who approves.** The user for actions on their own account; a manager or IT for anything else, through the existing ticket flow rather than the chat.
+- **Denial is a result.** A denied or expired call goes back to the model as an error result, the same path invalid arguments use today, so it can explain and offer an alternative.
+- **Guardrails get stricter for acting tools.** The input classifier fails closed instead of open for a conversation that is about to call one, and every approved action is audit logged with the user, the arguments and the approval.
+
 ## Storage and state
 
 - **In-memory vector store with a linear scan.** Fine for 12 articles, where scoring every one takes microseconds. Next: pgvector, Azure AI Search or Qdrant with an approximate nearest neighbour index.
@@ -26,12 +73,12 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Scope
 
-- **The client holds the conversation.** The server is stateless, so every request carries up to 20 earlier turns, and a long conversation costs more tokens per message and drops its oldest turns. The history is not signed, so a client can rewrite earlier assistant answers; that only affects its own session, and tool results are never accepted from clients. Next: server side conversations with an id, a store such as Redis or Postgres, and summarising old turns instead of dropping them.
-- **No persisted conversations.** Nothing is saved on the server, and a reload of the chat page starts over. Next: store conversations for support follow up and for building eval cases from real traffic.
+- **The client holds the conversation.** The server is stateless, so every request carries up to 20 earlier turns, and a long conversation costs more tokens per message and drops its oldest turns. The history is not signed, so a client can rewrite earlier assistant answers; that only affects its own session, and tool results are never accepted from clients. Next: see [Deliberately left unbuilt](#deliberately-left-unbuilt), item 1.
+- **No persisted conversations.** Nothing is saved on the server, and a reload of the chat page starts over. Next: see [Deliberately left unbuilt](#deliberately-left-unbuilt), items 1 and 2.
 
 ## Observability
 
-- **Basic structured logging.** One JSON line per event with a request id, written with `console`. Next: pino for performance, and OpenTelemetry traces with spans for each model call and tool call, so latency and cost are visible per step.
+- **Basic structured logging.** One JSON line per event with a request id, written with `console`. Next: pino for performance, and OpenTelemetry traces, planned in [Deliberately left unbuilt](#deliberately-left-unbuilt), item 3.
 - **Request ids are always generated.** An id arriving from a proxy (for example an incoming `x-request-id`) is not reused. Next: accept a trusted incoming id so traces connect across services.
 
 ## Data and content

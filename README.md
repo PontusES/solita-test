@@ -4,6 +4,8 @@ A small agent-driven backend: an internal IT helpdesk assistant for employees. I
 
 Design principle: **RAG for fuzzy knowledge, deterministic tools for exact and authoritative answers.**
 
+What was cut, and what was deliberately left unbuilt with a plan for each (server side conversation memory, routing unanswered questions to support, OpenTelemetry tracing, tool approval), is in [SHORTCUTS.md](SHORTCUTS.md).
+
 ## Quick start
 
 Requires Node 22 or newer (developed on Node 24).
