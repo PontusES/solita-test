@@ -7,6 +7,7 @@ const configSchema = z.object({
   TOOL_TIMEOUT_MS: z.coerce.number().int().min(100).default(10_000),
   KB_TOP_K: z.coerce.number().int().min(1).max(5).default(3),
   KB_MIN_SCORE: z.coerce.number().min(-1).max(1).default(0.3),
+  OPENAI_CHAT_MODEL: z.string().min(1).default("gpt-6-luna"),
   OPENAI_EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
 });
 

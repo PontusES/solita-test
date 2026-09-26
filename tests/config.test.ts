@@ -9,6 +9,7 @@ describe("parseConfig", () => {
       TOOL_TIMEOUT_MS: 10_000,
       KB_TOP_K: 3,
       KB_MIN_SCORE: 0.3,
+      OPENAI_CHAT_MODEL: "gpt-6-luna",
       OPENAI_EMBEDDING_MODEL: "text-embedding-3-small",
     });
   });
