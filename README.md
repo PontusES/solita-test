@@ -201,6 +201,8 @@ Tests never call OpenAI:
 - The OpenAI adapters are tested against the AI SDK's `MockLanguageModelV4` and a stubbed `fetch`.
 - Route handlers are called directly with a `Request`, with the container swapped for fakes.
 
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs `npm ci`, typecheck, lint, format check, tests and a production build on every push and pull request. It has no `OPENAI_API_KEY`: nothing in it calls OpenAI, and config is only read when a request needs it. It has read-only permissions, and the actions are pinned to commit SHAs.
+
 Coverage by area: vector math and ranking; both tools and their input validation; every loop path (plain answer, search, both tools, tool error, unknown tool, invalid args, timeout, step limit, abort); JSON and SSE transports including error sanitizing; every guardrail, the middleware wiring (with the SDK's mock model), blocking, failing open and the notices; every route handler: 200 and 400, plus 500 for `/chat` and `/chat/stream`; and the eval tooling: scoring, the runner, the acceptance rule and the improvement loop, all with fakes.
 
 ## Evals and prompt improvement
