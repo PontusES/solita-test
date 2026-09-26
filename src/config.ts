@@ -6,7 +6,8 @@ const configSchema = z.object({
   AGENT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(5),
   TOOL_TIMEOUT_MS: z.coerce.number().int().min(100).default(10_000),
   KB_TOP_K: z.coerce.number().int().min(1).max(5).default(3),
-  KB_MIN_SCORE: z.coerce.number().min(-1).max(1).default(0.3),
+  // Calibrated with the eval runner: relevant articles scored 0.55 to 0.70, unrelated ones up to 0.44.
+  KB_MIN_SCORE: z.coerce.number().min(-1).max(1).default(0.5),
   OPENAI_CHAT_MODEL: z.string().min(1).default("gpt-6-luna"),
   OPENAI_EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
   // Only used by the eval runner and the prompt improver.

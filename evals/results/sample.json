@@ -1,11 +1,11 @@
 {
   "meta": {
-    "createdAt": "2026-09-26T20:01:54.238Z",
+    "createdAt": "2026-09-26T20:06:31.982Z",
     "prompt": "prompts/system.md",
     "chatModel": "gpt-6-luna",
     "judgeModel": "gpt-6-sol",
     "embeddingModel": "text-embedding-3-small",
-    "kbMinScore": 0.3,
+    "kbMinScore": 0.5,
     "runs": 1,
     "split": "all"
   },
@@ -16,12 +16,13 @@
       "input": "The printer only prints blank white pages",
       "runs": [
         {
-          "answer": "Try these steps:\n\n1. Open the printer’s front panel and make sure the toner cartridge is seated firmly. If it’s new, check that the orange protective strip has been removed.\n2. Print a configuration page from the printer menu. If it’s blank too, the printer needs a new cartridge; Facilities can supply one. If it prints correctly, reinstall the printer from the self-service portal.\n\nBased on **“Printer output is empty or faded.”**",
+          "answer": "Based on **“Printer output is empty or faded”**:\n\n1. Check that the toner cartridge is seated firmly. If it’s new, make sure the orange protective strip was removed.\n2. Print a configuration page from the printer menu.\n   - If it’s blank too, the printer needs a new cartridge; Facilities can supply one.\n   - If it prints correctly, reinstall the printer from the self service portal.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Printer prints blank white pages troubleshooting"
+                "query": "printer printing blank white pages troubleshooting",
+                "topK": 5
               },
               "result": {
                 "results": [
@@ -29,7 +30,7 @@
                     "id": "kb-printer-blank-pages",
                     "title": "Printer output is empty or faded",
                     "content": "When a network printer feeds paper but the sheets come out without any print, the cause is almost always the toner. Open the front panel and check that the cartridge is seated firmly and that the orange protective strip has been removed from a new cartridge. Print a configuration page from the printer menu: if that page is also empty, the device needs a new cartridge, which facilities can supply. If the configuration page looks fine, the problem is in the document or driver, so reinstall the printer from the self service portal.",
-                    "score": 0.633
+                    "score": 0.632
                   }
                 ]
               },
@@ -48,27 +49,27 @@
           ],
           "searchScores": [
             [
-              0.633
+              0.632
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer names the article and accurately covers the toner cartridge, protective strip, configuration page, and printer reinstallation from the self-service portal. It follows the article’s diagnostic guidance without escalating."
+            "reasoning": "The answer names the correct article and accurately covers checking the toner cartridge and protective strip, printing a configuration page, and reinstalling the printer from the self-service portal when appropriate. It does not escalate."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1131,
-              "outputTokens": 119,
-              "totalTokens": 1250
+              "inputTokens": 1136,
+              "outputTokens": 117,
+              "totalTokens": 1253
             },
             "judge": {
-              "inputTokens": 462,
-              "outputTokens": 54,
-              "totalTokens": 516
+              "inputTokens": 459,
+              "outputTokens": 56,
+              "totalTokens": 515
             }
           },
-          "durationMs": 6237
+          "durationMs": 5083
         }
       ],
       "meanScore": 1,
@@ -80,28 +81,17 @@
       "input": "The mail server seems to be down for the whole office",
       "runs": [
         {
-          "answer": "This appears to be a whole-office outage. Call the IT on-call line now:\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.\n\nThe knowledge base article “Mailbox and calendar not updating in Outlook” covers individual Outlook sync issues, not an office-wide mail server outage.",
+          "answer": "The knowledge base doesn’t cover this outage. Since it appears to affect the whole office, treat it as a critical incident and call the IT on-call line:\n\n\"CRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.\"",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "mail server down for whole office email outage"
+                "query": "mail server down outage affecting whole office email unavailable troubleshooting and escalation",
+                "topK": 5
               },
               "result": {
-                "results": [
-                  {
-                    "id": "kb-outlook-sync",
-                    "title": "Mailbox and calendar not updating in Outlook",
-                    "content": "When new messages appear on your phone or in the web mailbox but not in the desktop Outlook client, the local cache has fallen behind. Check the status bar at the bottom of the window: if it says working offline, turn offline mode off on the Send and Receive tab. Restarting Outlook resolves most cases. If the client still does not update, close it and rebuild the profile from Mail settings in the Control Panel. Very large mailboxes above the quota can also stop synchronising, so archive older folders to bring the mailbox under the limit.",
-                    "score": 0.421
-                  },
-                  {
-                    "id": "kb-vpn-remote-access",
-                    "title": "VPN and remote access troubleshooting",
-                    "content": "Internal systems are only reachable through the corporate VPN when you work outside the office. If the GlobalConnect client fails to establish a tunnel, first confirm that your home internet connection works by opening a public website. Then sign out of the client, quit it completely and start it again. Make sure the gateway is set to vpn.corp.example.com. Hotel and cafe networks sometimes block VPN traffic; switching to a phone hotspot is a quick way to test this. Certificate errors usually mean the laptop has not synced with the domain for a while and must be connected in the office once.",
-                    "score": 0.305
-                  }
-                ]
+                "results": [],
+                "note": "No relevant articles found."
               },
               "isError": false
             },
@@ -125,29 +115,26 @@
             }
           ],
           "searchScores": [
-            [
-              0.421,
-              0.305
-            ]
+            []
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer identifies the whole-office mail outage as critical, immediately directs the user to call the on-call line, and reproduces the escalation text exactly. It does not bury the escalation under Outlook troubleshooting."
+            "reasoning": "The answer identifies the office-wide mail outage as critical, directs the user to call the on-call line immediately, and reproduces the escalation text exactly. It adds no unsupported troubleshooting or contact details."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 2215,
-              "outputTokens": 182,
-              "totalTokens": 2397
+              "inputTokens": 1699,
+              "outputTokens": 180,
+              "totalTokens": 1879
             },
             "judge": {
-              "inputTokens": 757,
-              "outputTokens": 87,
-              "totalTokens": 844
+              "inputTokens": 488,
+              "outputTokens": 55,
+              "totalTokens": 543
             }
           },
-          "durationMs": 7508
+          "durationMs": 6252
         }
       ],
       "meanScore": 1,
@@ -159,12 +146,13 @@
       "input": "I already restarted the VPN client and it still doesn't work",
       "runs": [
         {
-          "answer": "Restarting alone may not be enough. From **“VPN and remote access troubleshooting”**, try:\n\n1. Check that your internet works by opening a public website.\n2. Sign out of the GlobalConnect client, quit it completely, then reopen it.\n3. Confirm the gateway is `vpn.corp.example.com`.\n4. If you’re on hotel or café Wi‑Fi, try a phone hotspot. If you see a certificate error, the laptop may need to connect to the office network.\n\nIf it still doesn’t work, contact:\n\nIT Service Desk\nEmail: servicedesk@example.com\nPortal: https://support.example.com\nOpening hours: Monday to Friday, 08:00 to 17:00.\nInclude a description of the problem, the steps you have already tried, and any error messages.",
+          "answer": "According to **“VPN and remote access troubleshooting,”** try these steps:\n\n1. Check that your home internet works by opening a public website.\n2. Sign out of the VPN client, quit it completely, then start it again.\n3. Check that the gateway is `vpn.corp.example.com`.\n4. If you’re on hotel or café Wi‑Fi, try a phone hotspot.\n5. If you see a certificate error, the laptop may need to connect to the domain in the office.\n\nIf it still doesn’t work, contact the Service Desk and include the error message and steps you’ve tried:\n\n\"IT Service Desk\nEmail: servicedesk@example.com\nPortal: https://support.example.com\nOpening hours: Monday to Friday, 08:00 to 17:00.\nInclude a description of the problem, the steps you have already tried, and any error messages.\"",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "VPN client does not work after restarting, troubleshoot VPN connection"
+                "query": "VPN client not working after restart troubleshooting steps",
+                "topK": 5
               },
               "result": {
                 "results": [
@@ -172,19 +160,7 @@
                     "id": "kb-vpn-remote-access",
                     "title": "VPN and remote access troubleshooting",
                     "content": "Internal systems are only reachable through the corporate VPN when you work outside the office. If the GlobalConnect client fails to establish a tunnel, first confirm that your home internet connection works by opening a public website. Then sign out of the client, quit it completely and start it again. Make sure the gateway is set to vpn.corp.example.com. Hotel and cafe networks sometimes block VPN traffic; switching to a phone hotspot is a quick way to test this. Certificate errors usually mean the laptop has not synced with the domain for a while and must be connected in the office once.",
-                    "score": 0.59
-                  },
-                  {
-                    "id": "kb-password-reset",
-                    "title": "Resetting your domain password",
-                    "content": "Your domain password is shared by email, the laptop login, the VPN and most internal applications. Passwords expire every 90 days, and you will be prompted fourteen days in advance. To change or recover it, go to the self service password page at password.corp.example.com and verify your identity with your registered authenticator. The new password must be at least 14 characters and must not match any of your last ten. After a reset, lock and unlock your laptop while connected to the office network or VPN so the cached credentials are updated.",
-                    "score": 0.337
-                  },
-                  {
-                    "id": "kb-office-wifi",
-                    "title": "Wireless network in the office",
-                    "content": "Company laptops connect automatically to the CORP wireless network using a device certificate, and no password is needed. The GUEST network is for visitors and personal devices only and does not give access to internal systems. If your laptop does not join CORP, turn the wireless adapter off and on again, and forget the network so that it reconnects. Laptops that have not been on the corporate network for more than 60 days may have an expired certificate and must be connected with a cable once to renew it.",
-                    "score": 0.331
+                    "score": 0.569
                   }
                 ]
               },
@@ -215,32 +191,30 @@
           ],
           "searchScores": [
             [
-              0.59,
-              0.337,
-              0.331
+              0.569
             ]
           ],
           "judge": {
-            "score": 0.9,
-            "reasoning": "The answer gives the VPN article’s remaining checks and reproduces the normal service desk contact exactly, without treating the issue as critical. It does repeat the sign-out/quit/reopen step despite the user having already restarted the client, but that step is more specific than a simple restart."
+            "score": 0.93,
+            "reasoning": "The answer gives the article’s remaining checks, including connectivity, gateway, hotspot, and certificate guidance, without treating the issue as critical. It reproduces the normal Service Desk contact exactly; the only minor flaw is repeating the client restart step the user already tried."
           },
-          "score": 0.9,
+          "score": 0.93,
           "usage": {
             "agent": {
-              "inputTokens": 2431,
-              "outputTokens": 216,
-              "totalTokens": 2647
+              "inputTokens": 1921,
+              "outputTokens": 233,
+              "totalTokens": 2154
             },
             "judge": {
-              "inputTokens": 786,
-              "outputTokens": 75,
-              "totalTokens": 861
+              "inputTokens": 639,
+              "outputTokens": 70,
+              "totalTokens": 709
             }
           },
-          "durationMs": 9587
+          "durationMs": 6751
         }
       ],
-      "meanScore": 0.9,
+      "meanScore": 0.93,
       "passRate": 1
     },
     {
@@ -249,12 +223,12 @@
       "input": "How does our vacation policy work?",
       "runs": [
         {
-          "answer": "The knowledge base doesn’t cover our vacation policy, so I can’t confirm how it works. I can provide the IT support escalation contact if you’d like.",
+          "answer": "I couldn’t find information about the vacation policy in the IT knowledge base, so I can’t verify how it works. I can provide the appropriate contact for help if you’d like.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "vacation policy paid time off vacation accrual eligibility requesting days carryover",
+                "query": "vacation policy PTO annual leave accrual requesting time off",
                 "topK": 5
               },
               "result": {
@@ -275,22 +249,22 @@
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer accurately states that the knowledge base has no vacation policy information and avoids inventing policy details. It offers an escalation contact instead."
+            "reasoning": "The answer clearly states that the IT knowledge base has no vacation policy information and does not invent any details. It offers to provide an appropriate contact for help."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1022,
-              "outputTokens": 72,
-              "totalTokens": 1094
+              "inputTokens": 1019,
+              "outputTokens": 74,
+              "totalTokens": 1093
             },
             "judge": {
-              "inputTokens": 285,
-              "outputTokens": 43,
-              "totalTokens": 328
+              "inputTokens": 287,
+              "outputTokens": 47,
+              "totalTokens": 334
             }
           },
-          "durationMs": 7653
+          "durationMs": 4829
         }
       ],
       "meanScore": 1,
@@ -302,12 +276,12 @@
       "input": "Hi!",
       "runs": [
         {
-          "answer": "Hi! How can I help?",
+          "answer": "Hi! What can I help you with?",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "greeting Hi!"
+                "query": "Greeting or general assistance request; determine whether there is an employee IT helpdesk welcome article."
               },
               "result": {
                 "results": [],
@@ -332,12 +306,12 @@
           "score": 0,
           "usage": {
             "agent": {
-              "inputTokens": 997,
-              "outputTokens": 32,
-              "totalTokens": 1029
+              "inputTokens": 1011,
+              "outputTokens": 48,
+              "totalTokens": 1059
             }
           },
-          "durationMs": 1906
+          "durationMs": 2062
         }
       ],
       "meanScore": 0,
@@ -349,12 +323,12 @@
       "input": "How do I get a second monitor for my desk?",
       "runs": [
         {
-          "answer": "Request a monitor through the **hardware catalogue in the self-service portal**. Standard items within your role’s equipment allowance are approved automatically and usually arrive at the office within five working days. If the monitor is outside the catalogue or over your allowance, the portal will request your line manager’s approval.\n\nBased on **“Requesting new equipment.”**",
+          "answer": "Order a monitor through the hardware catalogue in the self-service portal. Standard items within your role’s equipment allowance are approved automatically and usually arrive at the office within five working days. If it’s outside the catalogue or over your allowance, the portal will request your line manager’s approval.\n\nBased on **“Requesting new equipment.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "request or get a second monitor for desk, monitor hardware request process",
+                "query": "request or obtain a second monitor for my desk, hardware equipment request process",
                 "topK": 5
               },
               "result": {
@@ -363,19 +337,7 @@
                     "id": "kb-hardware-ordering",
                     "title": "Requesting new equipment",
                     "content": "Laptops, monitors, docking stations, headsets and other peripherals are ordered through the hardware catalogue in the self service portal. Standard items that fall within the equipment allowance for your role are approved automatically, and delivery to the office usually takes five working days. Anything outside the catalogue, or above the allowance, requires approval from your line manager, which the portal requests on your behalf. Laptops are replaced on a four year cycle; earlier replacement is only possible if the device is faulty and has been assessed by the service desk.",
-                    "score": 0.546
-                  },
-                  {
-                    "id": "kb-meeting-room-display",
-                    "title": "Meeting room screen shows no signal",
-                    "content": "All meeting rooms have a wall display connected to a table hub with one USB C cable and one HDMI cable. If the display stays black or shows a no input message after you connect your laptop, check that the display is on and set to the HDMI 1 source using the remote in the wall holder. Unplug the cable from your laptop, wait five seconds and connect it again. On Windows, press the Windows key and P together and choose Duplicate or Extend. Wireless screen sharing is available in the larger rooms through the room system.",
-                    "score": 0.367
-                  },
-                  {
-                    "id": "kb-software-installation",
-                    "title": "Getting applications installed on your computer",
-                    "content": "Employees do not have administrator rights on company laptops, so programs cannot be installed directly from the internet. Approved applications are available in the Software Center, where you can install them yourself with one click. If the program you need is not listed, submit a software request in the self service portal with the name, version and business reason. The security team reviews new software for licensing and data protection, which normally takes three working days. Browser extensions follow the same approval process.",
-                    "score": 0.333
+                    "score": 0.63
                   }
                 ]
               },
@@ -394,29 +356,27 @@
           ],
           "searchScores": [
             [
-              0.546,
-              0.367,
-              0.333
+              0.63
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer explains how to order a monitor through the self-service portal’s hardware catalogue, notes that requests outside the catalogue or allowance require line-manager approval, and names the relevant article. Its additional delivery detail is supported by the article."
+            "reasoning": "The answer explains how to order a monitor through the self-service portal’s hardware catalogue, states when line manager approval is needed, and names the supporting article. Its additional delivery and automatic-approval details are grounded in the search result."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1400,
-              "outputTokens": 108,
-              "totalTokens": 1508
+              "inputTokens": 1151,
+              "outputTokens": 106,
+              "totalTokens": 1257
             },
             "judge": {
-              "inputTokens": 611,
+              "inputTokens": 440,
               "outputTokens": 62,
-              "totalTokens": 673
+              "totalTokens": 502
             }
           },
-          "durationMs": 4355
+          "durationMs": 5579
         }
       ],
       "meanScore": 1,
@@ -428,12 +388,12 @@
       "input": "I clicked a link in a strange email and typed my password on the page it opened",
       "runs": [
         {
-          "answer": "This is a security incident. **Change your password immediately** using the self-service password page in **“Resetting your domain password”**: password.corp.example.com. If you use that password elsewhere, change it there too.\n\n**“Handling suspicious messages”** says to report the message with Outlook’s **Report** button. Don’t forward it to colleagues.\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
+          "answer": "Treat this as a security incident:\n\n1. **Change your password immediately.**\n2. **Disconnect the affected device from the network, but don’t switch it off.**\n3. **Call IT on-call now.**\n4. If the email is still in Outlook, use the **Report** button; don’t forward it to colleagues.\n\nBased on **“Handling suspicious messages.”**\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Clicked suspicious email link and entered password on phishing page: secure account, change password, report security incident",
+                "query": "phishing clicked suspicious email link entered password credentials incident immediate actions report account security",
                 "topK": 5
               },
               "result": {
@@ -442,19 +402,7 @@
                     "id": "kb-phishing-report",
                     "title": "Handling suspicious messages",
                     "content": "Phishing messages try to trick you into clicking a link, opening an attachment or sharing your credentials, often by pretending to be a manager, a supplier or IT. Do not click links or open attachments in a message you did not expect. Use the Report button in the Outlook toolbar, which sends the message to the security team and removes it from your inbox. If you already entered your password on a suspicious page, change your password immediately and treat it as a security incident. Never forward the message to colleagues as a warning.",
-                    "score": 0.677
-                  },
-                  {
-                    "id": "kb-password-reset",
-                    "title": "Resetting your domain password",
-                    "content": "Your domain password is shared by email, the laptop login, the VPN and most internal applications. Passwords expire every 90 days, and you will be prompted fourteen days in advance. To change or recover it, go to the self service password page at password.corp.example.com and verify your identity with your registered authenticator. The new password must be at least 14 characters and must not match any of your last ten. After a reset, lock and unlock your laptop while connected to the office network or VPN so the cached credentials are updated.",
-                    "score": 0.411
-                  },
-                  {
-                    "id": "kb-mfa-device-change",
-                    "title": "Moving multi factor authentication to a new phone",
-                    "content": "Sign in prompts are confirmed through the authenticator app on your registered mobile device. Before you trade in or reset an old phone, open the security info page on the account portal and add the new device while the old one still works. Scan the QR code with the authenticator app on the new phone, approve the test notification, and then remove the old device from the list. If the old phone is already lost or wiped, you cannot complete sign in yourself, and the service desk must verify your identity and issue a temporary access pass.",
-                    "score": 0.365
+                    "score": 0.661
                   }
                 ]
               },
@@ -481,29 +429,27 @@
           ],
           "searchScores": [
             [
-              0.677,
-              0.411,
-              0.365
+              0.661
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer treats the exposed password as a security incident, instructs the user to change it immediately, and gives the knowledge-base password page. It escalates as critical and reproduces the official critical-incident instructions exactly."
+            "reasoning": "The answer treats the password disclosure as a security incident, tells the user to change their password immediately, and directs them to the critical on-call contact. It reproduces the critical escalation text exactly and grounds its other advice in the tool results."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 2505,
-              "outputTokens": 229,
-              "totalTokens": 2734
+              "inputTokens": 1961,
+              "outputTokens": 228,
+              "totalTokens": 2189
             },
             "judge": {
-              "inputTokens": 828,
-              "outputTokens": 92,
-              "totalTokens": 920
+              "inputTokens": 652,
+              "outputTokens": 87,
+              "totalTokens": 739
             }
           },
-          "durationMs": 6319
+          "durationMs": 5891
         }
       ],
       "meanScore": 1,
@@ -539,7 +485,7 @@
           "searchScores": [],
           "judge": {
             "score": 1,
-            "reasoning": "The answer reproduces the normal IT Service Desk contact exactly as returned by the tool, including its guidance on what to include. It adds no troubleshooting or invented details."
+            "reasoning": "The answer reproduces the normal IT Service Desk contact exactly as provided by the tool, including the email, portal, opening hours, and submission guidance. It adds no unnecessary troubleshooting or invented details."
           },
           "score": 1,
           "usage": {
@@ -550,11 +496,11 @@
             },
             "judge": {
               "inputTokens": 316,
-              "outputTokens": 49,
-              "totalTokens": 365
+              "outputTokens": 55,
+              "totalTokens": 371
             }
           },
-          "durationMs": 3658
+          "durationMs": 3589
         }
       ],
       "meanScore": 1,
@@ -566,13 +512,12 @@
       "input": "Nobody can hear me in Teams meetings",
       "runs": [
         {
-          "answer": "In Teams, during the call, open **Device settings** and check that the correct microphone is selected. Then:\n\n- Check that your headset’s physical mute switch is off.\n- If your headset is connected through a docking station, plug it directly into your laptop.\n- Run Teams’ **test call** to check the microphone.\n\nBased on **“Sound and microphone problems in Teams calls.”**",
+          "answer": "In the Teams meeting, open **Device settings** and make sure the correct microphone is selected and not muted. If you’re using a headset connected through a dock, connect it directly to your laptop. You can also use Teams’ **test call** to check the microphone.\n\nBased on **“Sound and microphone problems in Teams calls.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Nobody can hear me in Microsoft Teams meetings microphone troubleshooting",
-                "topK": 5
+                "query": "Nobody can hear my microphone/audio in Microsoft Teams meetings troubleshooting microphone permissions device selection mute"
               },
               "result": {
                 "results": [
@@ -580,13 +525,7 @@
                     "id": "kb-teams-audio",
                     "title": "Sound and microphone problems in Teams calls",
                     "content": "If other participants cannot hear you, or you cannot hear them, first open the device settings in Teams during the call and confirm that the correct speaker and microphone are selected. Headsets connected through a docking station are sometimes not picked up, so try connecting them directly to the laptop. Check that the microphone is not muted by a physical switch on the headset. Use the test call function in the settings to record and play back a short message. Bluetooth headsets should be paired again if the audio is choppy or keeps dropping out.",
-                    "score": 0.696
-                  },
-                  {
-                    "id": "kb-meeting-room-display",
-                    "title": "Meeting room screen shows no signal",
-                    "content": "All meeting rooms have a wall display connected to a table hub with one USB C cable and one HDMI cable. If the display stays black or shows a no input message after you connect your laptop, check that the display is on and set to the HDMI 1 source using the remote in the wall holder. Unplug the cable from your laptop, wait five seconds and connect it again. On Windows, press the Windows key and P together and choose Duplicate or Extend. Wireless screen sharing is available in the larger rooms through the room system.",
-                    "score": 0.32
+                    "score": 0.644
                   }
                 ]
               },
@@ -605,31 +544,30 @@
           ],
           "searchScores": [
             [
-              0.696,
-              0.32
+              0.644
             ]
           ],
           "judge": {
-            "score": 1,
-            "reasoning": "The answer names the Teams audio article and includes all four required troubleshooting steps. It stays grounded in the search result without adding unsupported advice."
+            "score": 0.8,
+            "reasoning": "The answer names the correct article and covers microphone selection, connecting the headset directly instead of through a dock, and using a test call. It mentions checking mute status but does not specifically tell the user to check the headset’s physical mute switch."
           },
-          "score": 1,
+          "score": 0.8,
           "usage": {
             "agent": {
-              "inputTokens": 1275,
-              "outputTokens": 115,
-              "totalTokens": 1390
+              "inputTokens": 1144,
+              "outputTokens": 105,
+              "totalTokens": 1249
             },
             "judge": {
-              "inputTokens": 597,
-              "outputTokens": 43,
-              "totalTokens": 640
+              "inputTokens": 455,
+              "outputTokens": 97,
+              "totalTokens": 552
             }
           },
-          "durationMs": 3987
+          "durationMs": 5078
         }
       ],
-      "meanScore": 1,
+      "meanScore": 0.8,
       "passRate": 1
     },
     {
@@ -638,28 +576,17 @@
       "input": "Around 40 people in our department cannot log in to anything since this morning",
       "runs": [
         {
-          "answer": "This is a department-wide login outage affecting many people, so call the IT on-call line now:\n\n\"CRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.\"\n\nThe knowledge base articles **“VPN and remote access troubleshooting”** and **“Resetting your domain password”** do not cover a department-wide login outage.",
+          "answer": "I couldn’t find a relevant article in the knowledge base. Since this is affecting around 40 people, treat it as a critical incident and call the IT on-call line now:\n\nCRITICAL INCIDENT: call the IT on-call line now at +1 555 0100, extension 911. It is staffed 24 hours a day, 7 days a week.\nDo not rely on email or the portal for critical incidents.\nHave ready: what is affected, how many people are impacted, and when it started.\nFor a suspected security incident, disconnect the affected device from the network but do not switch it off.",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "department-wide outage many users cannot log in to any systems since this morning troubleshooting account login outage"
+                "query": "Department-wide outage many people unable to log in to any systems since this morning; login authentication outage troubleshooting and escalation",
+                "topK": 5
               },
               "result": {
-                "results": [
-                  {
-                    "id": "kb-vpn-remote-access",
-                    "title": "VPN and remote access troubleshooting",
-                    "content": "Internal systems are only reachable through the corporate VPN when you work outside the office. If the GlobalConnect client fails to establish a tunnel, first confirm that your home internet connection works by opening a public website. Then sign out of the client, quit it completely and start it again. Make sure the gateway is set to vpn.corp.example.com. Hotel and cafe networks sometimes block VPN traffic; switching to a phone hotspot is a quick way to test this. Certificate errors usually mean the laptop has not synced with the domain for a while and must be connected in the office once.",
-                    "score": 0.321
-                  },
-                  {
-                    "id": "kb-password-reset",
-                    "title": "Resetting your domain password",
-                    "content": "Your domain password is shared by email, the laptop login, the VPN and most internal applications. Passwords expire every 90 days, and you will be prompted fourteen days in advance. To change or recover it, go to the self service password page at password.corp.example.com and verify your identity with your registered authenticator. The new password must be at least 14 characters and must not match any of your last ten. After a reset, lock and unlock your laptop while connected to the office network or VPN so the cached credentials are updated.",
-                    "score": 0.317
-                  }
-                ]
+                "results": [],
+                "note": "No relevant articles found."
               },
               "isError": false
             },
@@ -683,29 +610,26 @@
             }
           ],
           "searchScores": [
-            [
-              0.321,
-              0.317
-            ]
+            []
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer correctly identifies a department-wide outage affecting about 40 people as critical rather than treating it as an individual password reset. It reproduces the critical escalation text exactly and does not invent procedures or contact details."
+            "reasoning": "The answer correctly treats the department-wide login failure as a critical incident rather than an individual password reset. It reproduces the critical escalation text exactly and adds no unsupported procedures or contact details."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 2243,
-              "outputTokens": 201,
-              "totalTokens": 2444
+              "inputTokens": 1731,
+              "outputTokens": 193,
+              "totalTokens": 1924
             },
             "judge": {
-              "inputTokens": 768,
-              "outputTokens": 58,
-              "totalTokens": 826
+              "inputTokens": 495,
+              "outputTokens": 53,
+              "totalTokens": 548
             }
           },
-          "durationMs": 5685
+          "durationMs": 6353
         }
       ],
       "meanScore": 1,
@@ -717,12 +641,12 @@
       "input": "The sheets come out of the printer completely empty",
       "runs": [
         {
-          "answer": "For a network printer, check that the toner cartridge is firmly seated and, if it’s new, that the orange protective strip has been removed. Then print a configuration page from the printer menu:\n\n- If it’s blank too, the printer needs a new cartridge; Facilities can supply one.\n- If it prints normally, reinstall the printer from the self-service portal.\n\nBased on **“Printer output is empty or faded.”**",
+          "answer": "For a network printer, check that the toner cartridge is seated firmly and, if it’s new, that the orange protective strip has been removed. Print a configuration page from the printer menu:\n\n- If it’s blank too, the printer needs a new cartridge; Facilities can supply one.\n- If it prints normally, reinstall the printer from the self-service portal.\n\nBased on **“Printer output is empty or faded.”**",
           "toolCalls": [
             {
               "name": "search_knowledge_base",
               "args": {
-                "query": "Printer prints completely blank pages, troubleshooting empty sheets"
+                "query": "Printer outputs completely blank empty sheets troubleshooting"
               },
               "result": {
                 "results": [
@@ -730,7 +654,7 @@
                     "id": "kb-printer-blank-pages",
                     "title": "Printer output is empty or faded",
                     "content": "When a network printer feeds paper but the sheets come out without any print, the cause is almost always the toner. Open the front panel and check that the cartridge is seated firmly and that the orange protective strip has been removed from a new cartridge. Print a configuration page from the printer menu: if that page is also empty, the device needs a new cartridge, which facilities can supply. If the configuration page looks fine, the problem is in the document or driver, so reinstall the printer from the self service portal.",
-                    "score": 0.681
+                    "score": 0.672
                   }
                 ]
               },
@@ -749,27 +673,27 @@
           ],
           "searchScores": [
             [
-              0.681
+              0.672
             ]
           ],
           "judge": {
             "score": 1,
-            "reasoning": "The answer correctly applies the blank-output printer article and includes the toner check, configuration-page test, and appropriate cartridge or reinstall steps. It does not escalate or invent procedures."
+            "reasoning": "The answer correctly matches the blank-page printer article and gives the toner cartridge, configuration-page, and reinstall steps. It stays grounded in the article and does not escalate."
           },
           "score": 1,
           "usage": {
             "agent": {
-              "inputTokens": 1138,
-              "outputTokens": 115,
-              "totalTokens": 1253
+              "inputTokens": 1136,
+              "outputTokens": 112,
+              "totalTokens": 1248
             },
             "judge": {
-              "inputTokens": 447,
-              "outputTokens": 50,
-              "totalTokens": 497
+              "inputTokens": 444,
+              "outputTokens": 49,
+              "totalTokens": 493
             }
           },
-          "durationMs": 4439
+          "durationMs": 4259
         }
       ],
       "meanScore": 1,
@@ -796,7 +720,7 @@
           "searchScores": [],
           "judge": {
             "score": 1,
-            "reasoning": "The answer briefly greets the user and asks how it can help. No tool calls were needed or made."
+            "reasoning": "The answer greets the user briefly and asks how it can help. No tool calls were needed."
           },
           "score": 1,
           "usage": {
@@ -807,11 +731,11 @@
             },
             "judge": {
               "inputTokens": 207,
-              "outputTokens": 38,
-              "totalTokens": 245
+              "outputTokens": 36,
+              "totalTokens": 243
             }
           },
-          "durationMs": 2672
+          "durationMs": 2219
         }
       ],
       "meanScore": 1,
@@ -821,29 +745,29 @@
   "summary": {
     "train": {
       "cases": 8,
-      "meanScore": 0.8625,
+      "meanScore": 0.86625,
       "passRate": 0.875
     },
     "holdout": {
       "cases": 4,
-      "meanScore": 1,
+      "meanScore": 0.95,
       "passRate": 1
     },
     "all": {
       "cases": 12,
-      "meanScore": 0.9083333333333333,
+      "meanScore": 0.8941666666666667,
       "passRate": 0.9166666666666666
     },
     "tokens": {
       "agent": {
-        "inputTokens": 17886,
-        "outputTokens": 1480,
-        "totalTokens": 19366
+        "inputTokens": 15438,
+        "outputTokens": 1487,
+        "totalTokens": 16925
       },
       "judge": {
-        "inputTokens": 6064,
-        "outputTokens": 651,
-        "totalTokens": 6715
+        "inputTokens": 4882,
+        "outputTokens": 667,
+        "totalTokens": 5549
       }
     }
   }

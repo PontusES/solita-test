@@ -14,16 +14,16 @@ cp .env.example .env.local   # then set OPENAI_API_KEY
 npm run dev                  # http://localhost:3000
 ```
 
-| Variable                 | Default                  | Purpose                                                  |
-| ------------------------ | ------------------------ | -------------------------------------------------------- |
-| `OPENAI_API_KEY`         | none, required           | Read on the first agent request, not at build time       |
-| `OPENAI_CHAT_MODEL`      | `gpt-6-luna`             | Chat model                                               |
-| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for the knowledge base                   |
-| `EVAL_JUDGE_MODEL`       | `gpt-6-sol`              | Judge model, only used by `npm run eval`                 |
-| `AGENT_MAX_STEPS`        | `5`                      | Maximum model calls per request                          |
-| `TOOL_TIMEOUT_MS`        | `10000`                  | Per tool call                                            |
-| `KB_TOP_K`               | `3`                      | Default number of articles returned by a search          |
-| `KB_MIN_SCORE`           | `0.3`                    | Minimum cosine similarity for a hit (not calibrated yet) |
+| Variable                 | Default                  | Purpose                                                              |
+| ------------------------ | ------------------------ | -------------------------------------------------------------------- |
+| `OPENAI_API_KEY`         | none, required           | Read on the first agent request, not at build time                   |
+| `OPENAI_CHAT_MODEL`      | `gpt-6-luna`             | Chat model                                                           |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for the knowledge base                               |
+| `EVAL_JUDGE_MODEL`       | `gpt-6-sol`              | Judge model, only used by `npm run eval`                             |
+| `AGENT_MAX_STEPS`        | `5`                      | Maximum model calls per request                                      |
+| `TOOL_TIMEOUT_MS`        | `10000`                  | Per tool call                                                        |
+| `KB_TOP_K`               | `3`                      | Default number of articles returned by a search                      |
+| `KB_MIN_SCORE`           | `0.5`                    | Minimum cosine similarity for a hit, calibrated with the eval runner |
 
 ## Try it
 
@@ -189,7 +189,9 @@ The eval runner ([evals/](evals/)) runs the real agent, with the production wiri
 
 A run scores 0 if any deterministic check fails, otherwise the judge's score; the judge is skipped for failed runs, which saves cost. A table and token usage are printed, and the full report, including judge reasoning and every retrieval score, is written to `evals/results/`. A real report is committed as [sample.json](evals/results/sample.json).
 
-Baseline with the current prompt: **train 0.863, holdout 1.000**. The one failure is the greeting "Hi!", where the model still searched the knowledge base, while the holdout greeting "Good morning!" passed. The same prompt behaving differently on near identical inputs is exactly why `--runs` exists and why prompt changes should be measured, not guessed.
+Current results, from the committed sample: **train 0.866, holdout 0.950**. The one hard failure is the greeting "Hi!", where the model still searched the knowledge base, while the holdout greeting "Good morning!" passed. Scores also move between identical runs: the holdout dip comes from one Teams answer that left out the headset mute switch, which the previous run included. Both are why `--runs` exists and why prompt changes should be measured, not guessed.
+
+**Calibrating `KB_MIN_SCORE`.** The report records every retrieval score. With the first default of 0.3, the correct article scored 0.55 to 0.70 in every case that had one, while unrelated articles scored 0.32 to 0.41 (0.44 in an earlier smoke test) and were all passed to the model. The threshold is now 0.5, in the gap between the two groups. Two runs at 0.5 scored train 0.875 and 0.866, holdout 1.000 and 0.950, against the 0.3 baseline of train 0.863, holdout 1.000: no regression beyond run to run variance. Each troubleshooting question now gets only its correct article, and outage or off topic questions get "No relevant articles found" instead of loosely related ones.
 
 The prompt self-improver (P2) is not built yet, see [SHORTCUTS.md](SHORTCUTS.md).
 

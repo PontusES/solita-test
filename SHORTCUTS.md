@@ -35,7 +35,7 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 - **Hardcoded escalation text.** The contact details are fictional constants in [getEscalationContact.ts](src/tools/getEscalationContact.ts). Next: read them from the on-call or service desk system, so they are always current.
 - **A small hand-written knowledge base.** Twelve short articles in [articles.ts](src/knowledge/articles.ts), one embedding per article. Next: ingest the real wiki, split long pages into chunks, and re-index when pages change.
-- **`KB_MIN_SCORE` is calibrated on very little data.** In the baseline eval, the correct article scored 0.55 to 0.70 and unrelated articles 0.32 to 0.41 (0.44 in an earlier smoke test), so the default of 0.3 lets irrelevant articles through. Next: more eval cases before trusting any single threshold; a reranker would make the cut less sensitive.
+- **`KB_MIN_SCORE` is calibrated on very little data.** It was raised from 0.3 to 0.5 based on the eval runner: the correct article scored 0.55 to 0.70, unrelated articles 0.32 to 0.44. That rests on six correct matches, and a correct article phrased unusually could fall below 0.5; the agent then says the topic is not covered and offers escalation, which is the safe failure. Next: more eval cases before trusting any single threshold, and a reranker so the cut is less sensitive.
 
 ## Agent behaviour
 
