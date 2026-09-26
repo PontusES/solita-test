@@ -20,6 +20,7 @@ npm run dev                  # http://localhost:3000
 | `OPENAI_CHAT_MODEL`      | `gpt-6-luna`             | Chat model                                                           |
 | `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for the knowledge base                               |
 | `EVAL_JUDGE_MODEL`       | `gpt-6-sol`              | Judge model, only used by `npm run eval`                             |
+| `EVAL_OPTIMIZER_MODEL`   | `gpt-6-sol`              | Proposes prompt revisions, only used by `npm run improve-prompt`     |
 | `AGENT_MAX_STEPS`        | `5`                      | Maximum model calls per request                                      |
 | `TOOL_TIMEOUT_MS`        | `10000`                  | Per tool call                                                        |
 | `KB_TOP_K`               | `3`                      | Default number of articles returned by a search                      |
@@ -134,7 +135,7 @@ Successful and failed agent responses (200 and 500) carry an `x-request-id` head
  the AI SDK
 ```
 
-Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain TypeScript with injected dependencies and no framework imports, so they could move to Fastify or a Lambda unchanged. Only [openAiClient.ts](src/agent/llm/openAiClient.ts) and [embeddings.ts](src/knowledge/embeddings.ts) import the AI SDK.
+Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain TypeScript with injected dependencies and no framework imports, so they could move to Fastify or a Lambda unchanged. Only [openAiClient.ts](src/agent/llm/openAiClient.ts) and [embeddings.ts](src/knowledge/embeddings.ts) import the AI SDK in the app. The eval tooling in [evals/](evals/) and [scripts/](scripts/) builds the agent with the same `createAgentDeps` as the HTTP container, so evals test exactly what runs in production.
 
 ## Design decisions
 
@@ -159,7 +160,7 @@ Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain Ty
 ## Testing
 
 ```bash
-npm test               # 115 tests, no network
+npm test               # 131 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -172,14 +173,16 @@ Tests never call OpenAI:
 - The OpenAI adapters are tested against the AI SDK's `MockLanguageModelV4` and a stubbed `fetch`.
 - Route handlers are called directly with a `Request`, with the container swapped for fakes.
 
-Coverage by area: vector math and ranking; both tools and their input validation; every loop path (plain answer, search, both tools, tool error, unknown tool, invalid args, timeout, step limit, abort); JSON and SSE transports including error sanitizing; and every route handler: 200 and 400, plus 500 for `/chat` and `/chat/stream`.
+Coverage by area: vector math and ranking; both tools and their input validation; every loop path (plain answer, search, both tools, tool error, unknown tool, invalid args, timeout, step limit, abort); JSON and SSE transports including error sanitizing; every route handler: 200 and 400, plus 500 for `/chat` and `/chat/stream`; and the eval tooling: scoring, the runner, the acceptance rule and the improvement loop, all with fakes.
 
 ## Evals and prompt improvement
+
+### Eval runner
 
 ```bash
 npm run eval                                   # all 13 cases, 1 run each, about $0.02
 npm run eval -- --runs 3 --split holdout       # repeat runs to average out model variance
-npm run eval -- --prompt prompts/candidates/x.md
+npm run eval -- --prompt prompts/candidates/2026-09-26T20-20-58-139Z-r3.md
 ```
 
 The eval runner ([evals/](evals/)) runs the real agent, with the production wiring from `createAgentDeps`, against 13 cases in [cases.ts](evals/cases.ts): 8 train and 5 holdout cases, mostly paraphrases of train cases. Each run is scored in two layers:
@@ -203,11 +206,36 @@ After the change every case passed its deterministic checks in all 5 runs. The c
 
 **Calibrating `KB_MIN_SCORE`.** The report records every retrieval score. With the first default of 0.3, the correct article scored 0.55 to 0.70 in every case that had one, while unrelated articles scored 0.32 to 0.41 (0.44 in an earlier smoke test) and were all passed to the model. The threshold is now 0.5, in the gap between the two groups. Two runs at 0.5 scored train 0.875 and 0.866, holdout 1.000 and 0.950, against the 0.3 baseline of train 0.863, holdout 1.000: no regression beyond run to run variance. Each troubleshooting question now gets only its correct article, and outage or off topic questions get "No relevant articles found" instead of loosely related ones.
 
-The prompt self-improver (P2) is not built yet, see [SHORTCUTS.md](SHORTCUTS.md).
+### Prompt self-improver
+
+```bash
+npm run improve-prompt                        # 3 rounds, 3 runs per case per evaluation
+npm run improve-prompt -- --rounds 5 --apply  # write an accepted prompt to prompts/system.md
+```
+
+The improver treats [prompts/system.md](prompts/system.md) as a versioned artifact that only changes when a candidate is measurably better ([improvePrompt.ts](evals/improvePrompt.ts)):
+
+1. Evaluate the current prompt on all cases.
+2. Pick the weakest **train** cases, with their failed checks and the judge's reasoning. Holdout cases are filtered out in one place ([optimizer.ts](evals/optimizer.ts)) and never reach the optimizer.
+3. Ask an optimizer model (`gpt-6-sol`) for a revised prompt with a rationale and a list of changes. It is told to keep the tool names and the five core rules, not to hardcode answers to cases, and to prefer general principles over patches.
+4. Check the candidate's structure (both tool names, rules 1 to 5, at most 2500 characters) before spending an eval on it, then evaluate it on all cases.
+5. Accept it only if the train mean improves, the holdout mean does not drop, and no case that passed its checks in every run now fails one ([acceptance.ts](evals/acceptance.ts), unit tested). An accepted candidate becomes the baseline for the next round.
+
+Every candidate, accepted or not, is written to [prompts/candidates/](prompts/candidates/) as a `.md` (usable with `npm run eval -- --prompt`) and a `.json` with its scores, rationale, changes and the reasons for the decision. `prompts/system.md` is only written with `--apply`, and only if something was accepted; otherwise the script prints the `diff` command for a human review.
+
+**The committed run** started from the current prompt (train 0.979, holdout 1.000 over 3 runs). Its weakest train case was the VPN follow-up, where answers sometimes repeated steps the user had already tried:
+
+| Round | Candidate                                                             | Train | Holdout | Decision                                                 |
+| ----- | --------------------------------------------------------------------- | ----- | ------- | -------------------------------------------------------- |
+| 1     | Escalation does not replace troubleshooting; skip steps already tried | 1.000 | 0.800   | Rejected: two holdout cases started failing their checks |
+| 2     | Same idea, reworded                                                   | 0.954 | 0.800   | Rejected: train, holdout and three cases regressed       |
+| 3     | Same idea, more conservative                                          | 1.000 | 0.987   | Rejected: holdout dropped                                |
+
+Nothing was accepted, and that is the point of the design: the optimizer fixed the train weakness twice, and both times the holdout set, which it never sees, caught a side effect. Rounds 1 and 2 would have broken a Teams answer and a greeting followed by a real question.
 
 ## Versions
 
-Next.js 16.3.6, AI SDK `ai` 7.0.116 with `@ai-sdk/openai` 4.0.78, Zod 4.6.5, Vitest 5.0.2, TypeScript 5.9 (strict). All direct dependencies added for this project are pinned exactly.
+Next.js 16.3.6, AI SDK `ai` 7.0.116 with `@ai-sdk/openai` 4.0.78, Zod 4.6.5, Vitest 5.0.2, tsx 4.23.15 (runs the eval scripts), TypeScript 5.9 (strict). All direct dependencies added for this project are pinned exactly.
 
 ## How AI tools were used
 

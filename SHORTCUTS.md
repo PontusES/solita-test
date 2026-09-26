@@ -1,12 +1,12 @@
 # Shortcuts
 
-The 3 hour time cap was treated as the customer's budget. Work was prioritized so that whatever existed when time ran out was complete and working:
+The 3 hour time cap was treated as the customer's budget. Work was prioritized so that whatever existed at any point was complete and working, and each priority was only started once the one before it was done:
 
-| Priority | Scope                                                                               | Status  |
-| -------- | ----------------------------------------------------------------------------------- | ------- |
-| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built   |
-| P1       | OpenAPI spec and Swagger UI, eval runner                                            | Built   |
-| P2       | Prompt self-improver                                                                | Not yet |
+| Priority | Scope                                                                               | Status |
+| -------- | ----------------------------------------------------------------------------------- | ------ |
+| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built  |
+| P1       | OpenAPI spec and Swagger UI, eval runner                                            | Built  |
+| P2       | Prompt self-improver                                                                | Built  |
 
 Everything below is a deliberate shortcut: what was done, why it is acceptable for this case, and what would come next with more time.
 
@@ -58,12 +58,16 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Prompt
 
-- **The greeting fix was made by hand, not by the improver.** The plan was to change the prompt only through the prompt self-improver (P2). The greeting failure was fixed earlier with a manual, general rule change, measured with 5 runs per case before and after and guarded by a new holdout case. Next: let the improver propose such changes, with the same measurement.
+- **The greeting fix was made by hand, not by the improver.** The plan was to change the prompt only through the prompt self-improver. The greeting failure was fixed before the improver existed, with a manual, general rule change, measured with 5 runs per case before and after and guarded by a new holdout case. Next: route every prompt change through `npm run improve-prompt` or at least the same before and after measurement.
 - **The holdout set has been seen.** The fix was designed while looking at the greeting results of both splits, so the holdout greeting is no longer a fully blind test. The new greeting plus question case was added after the fix for that reason. Next: keep a fresh holdout set that nobody tunes against.
 
-## Not built yet
+## Prompt self-improver
 
-- **Prompt self-improver (P2).** Next: revise the prompt from failing train cases, and accept a candidate only if train improves and holdout does not get worse.
+- **"Holdout must not drop" has no tolerance.** Round 3 of the committed run was rejected for a holdout drop from 1.000 to 0.987, which over 3 runs may be noise. A strict rule errs on the side of keeping a known good prompt, which is the right default for an artifact that changes production behaviour. Next: more runs per evaluation, or a tolerance based on the measured run to run variance.
+- **One candidate per round.** Each round asks for a single revision, so three rounds explore three ideas, and here all three were variations of the same one. Next: several candidates per round with different instructions, keeping the best that passes the acceptance rule.
+- **Candidate reports are summaries.** The `.json` next to each candidate has split scores, the decision and the regressed case ids, but not each case's failed checks. Diagnosing a regression means rerunning `npm run eval -- --prompt` on the candidate. Next: store the per case results as well.
+- **Small data, real cost.** One improver run is about 160 agent runs plus judge and optimizer calls, under $1 here, and still judged on only 13 cases. Next: a larger case set before letting the improver make decisions on its own.
+- **Same vendor everywhere.** Agent, judge and optimizer are all OpenAI models, so they may share blind spots. Next: a judge from a different provider.
 
 ## API docs
 
