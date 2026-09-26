@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-const userMessage = z.string().trim().min(1).max(2000);
+export const userMessageSchema = z.string().trim().min(1).max(2000);
 
 export const chatRequestSchema = z.object({
-  message: userMessage,
+  message: userMessageSchema,
 });
 
 export const askQuerySchema = z.object({
-  q: userMessage,
+  q: userMessageSchema,
 });
 
 const tokenUsageSchema = z.object({
@@ -28,4 +28,15 @@ export const chatResponseSchema = z.object({
   ),
   finishReason: z.enum(["stop", "max-steps"]),
   usage: tokenUsageSchema.optional(),
+});
+
+// Documents the error bodies built in problem.ts (RFC 9457 problem details).
+export const problemSchema = z.object({
+  type: z.string(),
+  title: z.string(),
+  status: z.number().int(),
+  detail: z.string().optional(),
+  code: z.string().optional(),
+  requestId: z.string().optional(),
+  errors: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
 });

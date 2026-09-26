@@ -2,11 +2,11 @@
 
 The 3 hour time cap was treated as the customer's budget. Work was prioritized so that whatever existed when time ran out was complete and working:
 
-| Priority | Scope                                                                               | Status  |
-| -------- | ----------------------------------------------------------------------------------- | ------- |
-| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built   |
-| P1       | OpenAPI spec and Swagger UI, eval runner                                            | Not yet |
-| P2       | Prompt self-improver                                                                | Not yet |
+| Priority | Scope                                                                               | Status                                         |
+| -------- | ----------------------------------------------------------------------------------- | ---------------------------------------------- |
+| P0       | Vector store, two tools, agent loop, JSON and SSE endpoints, unit tests, these docs | Built                                          |
+| P1       | OpenAPI spec and Swagger UI, eval runner                                            | OpenAPI and Swagger built, eval runner not yet |
+| P2       | Prompt self-improver                                                                | Not yet                                        |
 
 Everything below is a deliberate shortcut: what was done, why it is acceptable for this case, and what would come next with more time.
 
@@ -55,9 +55,14 @@ Everything below is a deliberate shortcut: what was done, why it is acceptable f
 
 ## Not built yet
 
-- **OpenAPI spec and Swagger UI (P1).** Next: generate the spec from the existing Zod request and response schemas in [schemas.ts](src/http/schemas.ts), and serve Swagger UI at `/docs`.
 - **Eval runner (P1).** Next: about 12 cases split into train and holdout, deterministic checks on tool usage and exact escalation text, plus an LLM judge with a rubric.
 - **Prompt self-improver (P2).** Next: revise the prompt from failing train cases, and accept a candidate only if train improves and holdout does not get worse.
+
+## API docs
+
+- **Swagger UI is loaded from a CDN.** The version is pinned and the files are integrity checked, but `/docs` needs internet access. Next: serve `swagger-ui-dist` from the app itself.
+- **Stream events are described in prose.** The OpenAPI spec lists the SSE event types and their fields in the description, but has no JSON Schema per event, because OpenAPI has no standard way to describe an event stream. Next: a Zod schema per event, shared with the TypeScript types, and an AsyncAPI document if the stream becomes a public contract.
+- **The spec states that there is no authentication** (`security: []`), matching the code. It changes with the auth work above.
 
 ## Housekeeping
 

@@ -94,7 +94,7 @@ event: done
 data: {"type":"done","finishReason":"stop","usage":{"inputTokens":2223,"outputTokens":175,"totalTokens":2398}}
 ```
 
-Swagger UI at `/docs` is planned (P1), see [SHORTCUTS.md](SHORTCUTS.md).
+Or open [localhost:3000/docs](http://localhost:3000/docs) for Swagger UI and use "Try it out". Swagger UI only shows a streamed response once it has ended, so use `curl -N` to watch the stream live.
 
 ## API
 
@@ -104,6 +104,8 @@ Swagger UI at `/docs` is planned (P1), see [SHORTCUTS.md](SHORTCUTS.md).
 | POST   | `/api/agent/chat/stream` | same                                     | `200 text/event-stream`, events: `tool-call`, `tool-result`, `text-delta`, `done`, `error` |
 | GET    | `/api/agent/ask?q=`      | query parameter, same rules              | same JSON as `/chat`                                                                       |
 | GET    | `/api/health`            |                                          | `{ "status": "ok" }`, works without an API key                                             |
+| GET    | `/api/openapi`           |                                          | OpenAPI 3.1 spec (JSON)                                                                    |
+| GET    | `/docs`                  |                                          | Swagger UI for the spec                                                                    |
 
 Successful and failed agent responses (200 and 500) carry an `x-request-id` header that matches the server log.
 
@@ -149,12 +151,14 @@ Next.js is only the HTTP layer. `agent/`, `tools/` and `knowledge/` are plain Ty
 
 **Models.** `gpt-6-luna` is OpenAI's most efficient current model. It is a reasoning model, and on the Chat Completions API it only supports function calling with reasoning turned off, so we call it with `reasoning: "none"`. Chat Completions is stateless, so our own message history maps onto it directly; a helpdesk lookup does not need reasoning, and this keeps latency and cost low. Embeddings use `text-embedding-3-small`, which is plenty for a small article set.
 
+**OpenAPI from the validation schemas.** The spec at `/api/openapi` is generated with Zod's built-in `z.toJSONSchema` from the same schemas the routes validate with ([openapi.ts](src/http/openapi.ts)). Zod emits JSON Schema 2020-12, the dialect of OpenAPI 3.1, so no extra library is needed and the docs cannot drift from the real validation. Swagger UI at `/docs` is a small HTML page loading `swagger-ui-dist` from a CDN, pinned to 5.33.0 with Subresource Integrity hashes. The spec passes `redocly lint`.
+
 **Error handling.** Following the OWASP guidance, clients get a generic message and a request id; the full error goes to the structured JSON log under that id. User messages are not logged, only their length.
 
 ## Testing
 
 ```bash
-npm test               # 83 tests, no network
+npm test               # 90 tests, no network
 npm run typecheck      # next typegen && tsc --noEmit
 npm run lint
 npm run format:check
@@ -171,7 +175,7 @@ Coverage by area: vector math and ranking; both tools and their input validation
 
 ## Evals and prompt improvement
 
-Planned as P1 (eval runner) and P2 (prompt self-improver), see [SHORTCUTS.md](SHORTCUTS.md). Manual smoke tests with real models already show why they matter: an irrelevant article passed the `KB_MIN_SCORE` threshold at 0.32, and the model searched the knowledge base even for a plain "Hi!".
+The eval runner (P1) and the prompt self-improver (P2) are not built yet, see [SHORTCUTS.md](SHORTCUTS.md). Manual smoke tests with real models already show why they matter: an irrelevant article passed the `KB_MIN_SCORE` threshold at 0.32, and the model searched the knowledge base even for a plain "Hi!".
 
 ## Versions
 
