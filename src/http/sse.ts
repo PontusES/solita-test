@@ -42,6 +42,9 @@ export function createAgentEventStream(
   const startedAt = Date.now();
   const toolNames: string[] = [];
   const guardrails: string[] = [];
+  // Set when the client disconnects. A pull that was already waiting on the agent can still
+  // resolve afterwards, and must not touch the closed stream or log the disconnect again.
+  let cancelled = false;
 
   function fail(controller: ReadableStreamDefaultController<Uint8Array>, message: string) {
     const fields = { durationMs: Date.now() - startedAt, error: message };
@@ -67,6 +70,9 @@ export function createAgentEventStream(
     async pull(controller) {
       try {
         const { value: event, done } = await iterator.next();
+        if (cancelled) {
+          return;
+        }
         if (done) {
           controller.close();
           return;
@@ -93,12 +99,17 @@ export function createAgentEventStream(
           });
         }
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
         // runAgent turns its own failures into error events; this is only a safety net.
         fail(controller, error instanceof Error ? error.message : String(error));
       }
     },
     // Called when the client disconnects. Returning the iterator stops the agent generator.
     async cancel() {
+      cancelled = true;
+      logger.info("client disconnected", { durationMs: Date.now() - startedAt });
       await iterator.return?.();
     },
   });

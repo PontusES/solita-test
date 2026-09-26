@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { AgentEvent } from "@/agent/events";
 import { createAgentEventStream, encodeSseEvent } from "@/http/sse";
-import { silentLogger } from "@/logger";
-import { parseSse } from "./parseSse";
+import { silentLogger, type Logger } from "@/logger";
+import { parseSse } from "@/http/sseParser";
 
 async function* emit(events: AgentEvent[]): AsyncGenerator<AgentEvent> {
   yield* events;
@@ -105,5 +105,39 @@ describe("createAgentEventStream", () => {
     await reader.cancel();
 
     expect(finished).toBe(true);
+  });
+
+  it("logs a disconnect once when a pending event arrives after the client cancelled", async () => {
+    // Like a real disconnect: the agent is still working when the client goes away, and then
+    // yields the abort error into a stream that is already cancelled.
+    const abort = new AbortController();
+    let release = () => {};
+    const pending = new Promise<void>((resolve) => (release = resolve));
+    async function* agent(): AsyncGenerator<AgentEvent> {
+      await pending;
+      yield { type: "error", message: "Request aborted" };
+    }
+    const logs: { level: string; message: string }[] = [];
+    const record = (level: string) => (message: string) => logs.push({ level, message });
+    const logger: Logger = {
+      info: record("info"),
+      warn: record("warn"),
+      error: record("error"),
+      child: () => logger,
+    };
+
+    const reader = createAgentEventStream(agent(), {
+      requestId: "req-1",
+      logger,
+      signal: abort.signal,
+    }).getReader();
+    const read = reader.read();
+    abort.abort();
+    const cancelled = reader.cancel();
+    release();
+    await Promise.all([read, cancelled]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(logs).toEqual([{ level: "info", message: "client disconnected" }]);
   });
 });
