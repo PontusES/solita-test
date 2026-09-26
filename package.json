@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "improve-prompt": "tsx scripts/improve-prompt.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.78",

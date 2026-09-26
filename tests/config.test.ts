@@ -12,6 +12,7 @@ describe("parseConfig", () => {
       OPENAI_CHAT_MODEL: "gpt-6-luna",
       OPENAI_EMBEDDING_MODEL: "text-embedding-3-small",
       EVAL_JUDGE_MODEL: "gpt-6-sol",
+      EVAL_OPTIMIZER_MODEL: "gpt-6-sol",
     });
   });
 

@@ -4,3 +4,4 @@ package-lock.json
 next-env.d.ts
 docs
 evals/results
+prompts/candidates

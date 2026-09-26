@@ -1,0 +1,48 @@
+{
+  "round": 2,
+  "accepted": false,
+  "reasons": [
+    "train mean did not improve: 0.979 to 0.954",
+    "holdout mean dropped: 1.000 to 0.800",
+    "regression: printer-blank-pages passed its checks in every run before, now 0.667",
+    "regression: teams-mic-holdout passed its checks in every run before, now 0.667",
+    "regression: greeting-with-question-holdout passed its checks in every run before, now 0.333"
+  ],
+  "rationale": "The revised prompt makes the assistant use the employee’s troubleshooting history to select remaining knowledge-base steps, while still providing the required escalation contact when a prior step has failed.",
+  "changes": [
+    "Extended rule 3 to require the contact alongside remaining useful article steps when the article calls for support after an attempted step.",
+    "Extended rule 5 to prioritize untried, applicable checks rather than repeating completed steps or giving only an escalation contact."
+  ],
+  "weaknesses": [
+    "vpn-still-broken"
+  ],
+  "summary": {
+    "train": {
+      "cases": 8,
+      "meanScore": 0.9541666666666666,
+      "passRate": 0.9583333333333333
+    },
+    "holdout": {
+      "cases": 5,
+      "meanScore": 0.8,
+      "passRate": 0.8
+    },
+    "all": {
+      "cases": 13,
+      "meanScore": 0.8948717948717948,
+      "passRate": 0.8974358974358974
+    },
+    "tokens": {
+      "agent": {
+        "inputTokens": 61039,
+        "outputTokens": 5002,
+        "totalTokens": 66041
+      },
+      "judge": {
+        "inputTokens": 14909,
+        "outputTokens": 2027,
+        "totalTokens": 16936
+      }
+    }
+  }
+}

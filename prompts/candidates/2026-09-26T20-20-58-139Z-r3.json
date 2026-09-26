@@ -1,0 +1,44 @@
+{
+  "round": 3,
+  "accepted": false,
+  "reasons": [
+    "holdout mean dropped: 1.000 to 0.987"
+  ],
+  "rationale": "The revision keeps escalation available while ensuring the assistant still gives useful, article-backed next steps. It also makes follow-up answers responsive to what the employee has already tried.",
+  "changes": [
+    "Clarified that providing an escalation contact does not replace applicable troubleshooting.",
+    "Directed the assistant to give remaining relevant article checks on follow-ups without unnecessarily repeating completed steps."
+  ],
+  "weaknesses": [
+    "vpn-still-broken"
+  ],
+  "summary": {
+    "train": {
+      "cases": 8,
+      "meanScore": 1,
+      "passRate": 1
+    },
+    "holdout": {
+      "cases": 5,
+      "meanScore": 0.9866666666666667,
+      "passRate": 1
+    },
+    "all": {
+      "cases": 13,
+      "meanScore": 0.9948717948717949,
+      "passRate": 1
+    },
+    "tokens": {
+      "agent": {
+        "inputTokens": 55486,
+        "outputTokens": 4770,
+        "totalTokens": 60256
+      },
+      "judge": {
+        "inputTokens": 16729,
+        "outputTokens": 2286,
+        "totalTokens": 19015
+      }
+    }
+  }
+}

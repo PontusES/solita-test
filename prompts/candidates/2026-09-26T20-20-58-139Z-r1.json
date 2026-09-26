@@ -1,0 +1,46 @@
+{
+  "round": 1,
+  "accepted": false,
+  "reasons": [
+    "holdout mean dropped: 1.000 to 0.800",
+    "regression: teams-mic-holdout passed its checks in every run before, now 0.667",
+    "regression: greeting-with-question-holdout passed its checks in every run before, now 0.333"
+  ],
+  "rationale": "The revision makes the assistant use the employee’s troubleshooting history while preserving escalation requirements. It prevents an escalation-only answer from omitting useful knowledge-base steps, without encouraging unsafe troubleshooting when an article calls for immediate escalation.",
+  "changes": [
+    "Clarified that escalation generally supplements, rather than replaces, relevant troubleshooting.",
+    "Directed the assistant to skip steps already tried and include remaining applicable article steps before the contact."
+  ],
+  "weaknesses": [
+    "vpn-still-broken"
+  ],
+  "summary": {
+    "train": {
+      "cases": 8,
+      "meanScore": 1,
+      "passRate": 1
+    },
+    "holdout": {
+      "cases": 5,
+      "meanScore": 0.8,
+      "passRate": 0.8
+    },
+    "all": {
+      "cases": 13,
+      "meanScore": 0.9230769230769231,
+      "passRate": 0.9230769230769231
+    },
+    "tokens": {
+      "agent": {
+        "inputTokens": 58926,
+        "outputTokens": 5003,
+        "totalTokens": 63929
+      },
+      "judge": {
+        "inputTokens": 15307,
+        "outputTokens": 2098,
+        "totalTokens": 17405
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@ const configSchema = z.object({
   OPENAI_EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
   // Only used by the eval runner and the prompt improver.
   EVAL_JUDGE_MODEL: z.string().min(1).default("gpt-6-sol"),
+  EVAL_OPTIMIZER_MODEL: z.string().min(1).default("gpt-6-sol"),
 });
 
 export type Config = z.infer<typeof configSchema>;
