@@ -27,6 +27,12 @@ These are the next steps I would take. Each builds on something that already exi
 - a denial goes back to the model as an error result;
 - every approved action is audit logged.
 
+**5. Hybrid search, if there is time after that.** This is the most interesting technical addition, and it is motivated for real in a helpdesk. Error codes and product names such as "Outlook" or "0x80070005" match better lexically, while everyday descriptions ("my computer is super slow") need semantics.
+
+- Run BM25 and the vector search side by side, and merge the two rankings with reciprocal rank fusion.
+- Fusion works on ranks, not scores, so the two scales never have to be compared. The cosine threshold would then apply only to the vector side.
+- Add retrieval eval cases with error codes and product names, then run `npm run eval:retrieval` before and after. That shows with numbers whether it helped, instead of claiming it.
+
 ## Shortcuts taken
 
 Each line is the shortcut, then what comes next.
@@ -35,7 +41,7 @@ Each line is the shortcut, then what comes next.
 
 - In-memory vector store, embedded again on every start, one per process. Next: pgvector or Azure AI Search, with embeddings computed at ingest.
 - 12 hand-written articles, one embedding each. Next: ingest the real wiki, split into chunks.
-- `KB_MIN_SCORE` 0.5 is too strict for raw user wording: the retrieval evals show it cuts 43% of relevant hits. The answer evals still pass because the agent rewrites the query before searching. Next: choose the threshold from the agent's real queries, and add a reranker.
+- `KB_MIN_SCORE` 0.5 is too strict for raw user wording: the retrieval evals show it cuts 43% of relevant hits. The answer evals still pass because the agent rewrites the query before searching. Next: choose the threshold from the agent's real queries, and item 5 above.
 - Escalation contacts are hardcoded constants. Next: read them from the service desk system.
 
 **Security**
