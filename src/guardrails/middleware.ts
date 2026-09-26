@@ -11,6 +11,13 @@ import type { GuardrailNotice } from "./types";
 
 type Report = (notice: GuardrailNotice) => void;
 
+// Streamed text that an output check changed: what was sent, and what it should have been.
+export interface TextCorrection {
+  original: string;
+  corrected: string;
+}
+type Correct = (correction: TextCorrection) => void;
+
 // Runs before every model call: secrets in user messages never reach the provider.
 export function createSecretRedactionMiddleware(
   report: Report = () => {},
@@ -69,11 +76,15 @@ function systemPromptOf(prompt: LanguageModelV4Prompt): string {
     .join("\n");
 }
 
-// Output rails in blocking mode: each text block is held back until it is complete, checked,
-// and only then released. Tool calls still stream immediately; only the answer text waits.
-// This follows the "check before showing" default of OpenAI Guardrails and NeMo's
-// stream_first=false: invented contact details or a leaked prompt must never reach the user.
-export function createOutputGuardMiddleware(report: Report = () => {}): LanguageModelMiddleware {
+// Output rails in streaming mode: text is passed on as it arrives, so the user sees the answer
+// being written, and each text block is checked once it is complete. If a check changes the
+// block, `correct` is called so the client can replace what it already showed. This is NeMo's
+// stream_first=true: better perceived latency, at the cost that an invented contact or a
+// leaked sentence can be visible until the block ends.
+export function createOutputGuardMiddleware(
+  report: Report = () => {},
+  correct: Correct = () => {},
+): LanguageModelMiddleware {
   return {
     wrapStream: async ({ doStream, params }) => {
       const { stream, ...rest } = await doStream();
@@ -100,12 +111,14 @@ export function createOutputGuardMiddleware(report: Report = () => {}): Language
               buffers.set(part.id, "");
             } else if (part.type === "text-delta") {
               buffers.set(part.id, (buffers.get(part.id) ?? "") + part.delta);
-              return;
             } else if (part.type === "text-end") {
               const text = buffers.get(part.id);
               buffers.delete(part.id);
               if (text) {
-                controller.enqueue({ type: "text-delta", id: part.id, delta: checked(text) });
+                const corrected = checked(text);
+                if (corrected !== text) {
+                  correct({ original: text, corrected });
+                }
               }
             }
             controller.enqueue(part);

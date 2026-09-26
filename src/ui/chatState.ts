@@ -46,6 +46,13 @@ export function applyStreamEvent(exchange: Exchange, { event, data }: ParsedSseE
       }
       return { ...exchange, items: [...exchange.items, { kind: "text", text }] };
     }
+    case "text-replace": {
+      // Replaces the text shown since the last tool call; guardrail badges stay where they are.
+      const lastTool = exchange.items.findLastIndex((item) => item.kind === "tool");
+      const kept = exchange.items.filter((item, i) => i <= lastTool || item.kind !== "text");
+      const text = String(data.text ?? "");
+      return { ...exchange, items: text ? [...kept, { kind: "text", text }] : kept };
+    }
     case "tool-call":
       return {
         ...exchange,

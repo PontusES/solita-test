@@ -41,6 +41,27 @@ describe("collect", () => {
     });
   });
 
+  it("applies a text-replace to the text since the last tool event only", async () => {
+    const result = await collect(
+      emit([
+        { type: "text-delta", text: "Let me check. " },
+        { type: "tool-call", id: "c1", name: "get_escalation_contact", args: {} },
+        {
+          type: "tool-result",
+          id: "c1",
+          name: "get_escalation_contact",
+          result: "x",
+          isError: false,
+        },
+        { type: "text-delta", text: "Call +1 555 0199 22." },
+        { type: "text-replace", text: "Call [contact removed]." },
+        { type: "done", finishReason: "stop" },
+      ]),
+    );
+
+    expect(result.answer).toBe("Let me check. Call [contact removed].");
+  });
+
   it("throws on an error event", async () => {
     await expect(collect(emit([{ type: "error", message: "boom" }]))).rejects.toThrow(
       AgentRunError,

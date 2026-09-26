@@ -5,6 +5,8 @@ import type { AgentMessage } from "../messages";
 
 export type LlmStepEvent =
   | { type: "text-delta"; text: string }
+  // Replaces all text of this step so far, after an output guardrail corrected it.
+  | { type: "text-replace"; text: string }
   | { type: "tool-call"; id: string; name: string; args: unknown }
   | ({ type: "guardrail" } & GuardrailNotice)
   | { type: "finish"; usage?: TokenUsage };

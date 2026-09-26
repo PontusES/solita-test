@@ -85,7 +85,8 @@ const streamDescription = `One Server-Sent Event per agent event, as \`event: <t
 - \`tool-call\`: \`{ id, name, args }\`
 - \`tool-result\`: \`{ id, name, result, isError }\`
 - \`guardrail\`: \`{ stage, rule, action }\`, a guardrail acted, for example \`{ stage: "input", rule: "secret", action: "redacted" }\`
-- \`text-delta\`: \`{ text }\`, a piece of the answer. Each block of answer text is checked by the output guardrails before it is sent, so it can arrive in one piece
+- \`text-delta\`: \`{ text }\`, a piece of the answer, sent as the model writes it
+- \`text-replace\`: \`{ text }\`, an output guardrail corrected text that was already sent: replace all text since the last \`tool-call\` or \`tool-result\` event (or since the start) with \`text\`. Comes after the \`guardrail\` event that explains it
 - \`done\`: \`{ finishReason, usage }\`, always the last event of a successful run
 - \`error\`: \`{ code: "${AGENT_FAILED_CODE}", message, requestId }\`, sent instead of \`done\` if the run fails
 

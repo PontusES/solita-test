@@ -12,6 +12,7 @@ import {
 } from "ai";
 import {
   createOutputGuardMiddleware,
+  type TextCorrection,
   createSecretRedactionMiddleware,
 } from "../../guardrails/middleware";
 import type { GuardrailNotice } from "../../guardrails/types";
@@ -84,15 +85,32 @@ export class OpenAiLlmClient implements LlmClient {
     // events; the model is wrapped per call so each request gets its own list.
     const notices: GuardrailNotice[] = [];
     const report = (notice: GuardrailNotice) => notices.push(notice);
+    const corrections: TextCorrection[] = [];
+    const correct = (correction: TextCorrection) => corrections.push(correction);
+    // All text of this step, so a correction of the last block can be turned into the step's
+    // full corrected text.
+    let stepText = "";
     const guardedModel = wrapLanguageModel({
       model: this.model,
       // Applied outside in: secrets are redacted before the output guard sees the prompt.
-      middleware: [createSecretRedactionMiddleware(report), createOutputGuardMiddleware(report)],
+      middleware: [
+        createSecretRedactionMiddleware(report),
+        createOutputGuardMiddleware(report, correct),
+      ],
     });
     function* drainNotices(): Generator<LlmStepEvent> {
       while (notices.length > 0) {
         const notice = notices.shift() as GuardrailNotice;
         yield { type: "guardrail", ...notice };
+      }
+      while (corrections.length > 0) {
+        const { original, corrected } = corrections.shift() as TextCorrection;
+        // The corrected block is the one that just ended, so it is the end of the step's text.
+        const before = stepText.endsWith(original)
+          ? stepText.slice(0, stepText.length - original.length)
+          : "";
+        stepText = before + corrected;
+        yield { type: "text-replace", text: stepText };
       }
     }
 
@@ -110,6 +128,7 @@ export class OpenAiLlmClient implements LlmClient {
       yield* drainNotices();
       switch (part.type) {
         case "text-delta":
+          stepText += part.text;
           yield { type: "text-delta", text: part.text };
           break;
         case "tool-call":

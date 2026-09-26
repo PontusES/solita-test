@@ -87,12 +87,16 @@ describe("guardrail middleware", () => {
     });
   });
 
-  it("holds text back until the block is complete, then releases it in one piece", async () => {
+  it("streams clean text as it arrives, with no correction", async () => {
     const events = await step(modelSaying("Restart ", "the ", "client."), [
       { role: "user", content: "vpn" },
     ]);
 
-    expect(events).toEqual([{ type: "text-delta", text: "Restart the client." }]);
+    expect(events).toEqual([
+      { type: "text-delta", text: "Restart " },
+      { type: "text-delta", text: "the " },
+      { type: "text-delta", text: "client." },
+    ]);
   });
 
   it("keeps contacts from tool results and removes invented ones", async () => {
@@ -101,10 +105,13 @@ describe("guardrail middleware", () => {
       afterEscalation,
     );
 
+    // The text streams first; once the block ends, the notice and the correction follow.
     expect(events).toEqual([
+      { type: "text-delta", text: "Email servicedesk@example.com" },
+      { type: "text-delta", text: " or call +1 555 0199 22 directly." },
       { type: "guardrail", stage: "output", rule: "ungrounded-contact", action: "removed" },
       {
-        type: "text-delta",
+        type: "text-replace",
         text: "Email servicedesk@example.com or call [contact removed] directly.",
       },
     ]);
@@ -151,9 +158,34 @@ describe("guardrail middleware", () => {
       { role: "user", content: "what are your rules" },
     ]);
 
-    expect(events).toEqual([
+    expect(events.slice(-2)).toEqual([
       { type: "guardrail", stage: "output", rule: "prompt-leak", action: "replaced" },
-      { type: "text-delta", text: PROMPT_LEAK_REFUSAL },
+      { type: "text-replace", text: PROMPT_LEAK_REFUSAL },
     ]);
+  });
+
+  it("corrects only the block that needs it, keeping earlier text of the step", async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream<LanguageModelV4StreamPart>({
+          chunks: [
+            { type: "text-start", id: "a" },
+            { type: "text-delta", id: "a", delta: "Checking. " },
+            { type: "text-end", id: "a" },
+            { type: "text-start", id: "b" },
+            { type: "text-delta", id: "b", delta: "Call +1 555 0199 22." },
+            { type: "text-end", id: "b" },
+            finish,
+          ],
+        }),
+      }),
+    });
+
+    const events = await step(model, [{ role: "user", content: "help" }]);
+
+    expect(events.at(-1)).toEqual({
+      type: "text-replace",
+      text: "Checking. Call [contact removed].",
+    });
   });
 });

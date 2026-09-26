@@ -153,6 +153,11 @@ export async function* runAgent(
             text += event.text;
             yield event;
             break;
+          case "text-replace":
+            // The model's history must hold the corrected text, not what the guardrail removed.
+            text = event.text;
+            yield event;
+            break;
           case "tool-call":
             toolCalls.push({ id: event.id, name: event.name, args: event.args });
             break;

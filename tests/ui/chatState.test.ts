@@ -28,6 +28,23 @@ describe("applyStreamEvent", () => {
     ]);
   });
 
+  it("replaces the text since the last tool call and keeps tools and badges", () => {
+    const exchange = run([
+      event({ type: "text-delta", text: "Checking." }),
+      event({ type: "tool-call", id: "c1", name: "search_knowledge_base", args: {} }),
+      event({ type: "text-delta", text: "Call +1 555 " }),
+      event({ type: "text-delta", text: "0199 22." }),
+      event({ type: "guardrail", stage: "output", rule: "ungrounded-contact", action: "removed" }),
+      event({ type: "text-replace", text: "Call [contact removed]." }),
+    ]);
+    expect(exchange.items).toEqual([
+      { kind: "text", text: "Checking." },
+      { kind: "tool", id: "c1", name: "search_knowledge_base", args: {} },
+      { kind: "guardrail", stage: "output", rule: "ungrounded-contact", action: "removed" },
+      { kind: "text", text: "Call [contact removed]." },
+    ]);
+  });
+
   it("attaches a tool result to its call", () => {
     const exchange = run([
       event({ type: "tool-call", id: "c1", name: "get_escalation_contact", args: {} }),

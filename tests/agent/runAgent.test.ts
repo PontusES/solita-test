@@ -124,6 +124,26 @@ describe("runAgent", () => {
     ]);
   });
 
+  it("keeps the corrected text, not the original, in the model's history", async () => {
+    const llm = new FakeLlmClient([
+      [
+        text("Call +1 555 0199 22. "),
+        { type: "text-replace", text: "Call [contact removed]. " },
+        call("c1", "get_escalation_contact", { severity: "normal" }),
+        finish,
+      ],
+      [text("Done."), finish],
+    ]);
+
+    const events = await run(llm);
+
+    expect(events).toContainEqual({ type: "text-replace", text: "Call [contact removed]. " });
+    expect(llm.requests[1]?.messages[1]).toMatchObject({
+      role: "assistant",
+      text: "Call [contact removed]. ",
+    });
+  });
+
   it("searches, sends the result back to the model and then answers", async () => {
     const llm = new FakeLlmClient([
       [call("c1", "search_knowledge_base", { query: "printer toner cartridge" }), finish],

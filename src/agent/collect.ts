@@ -22,6 +22,8 @@ export class AgentRunError extends Error {}
 // endpoint forwards the same events, so there is one agent implementation for both.
 export async function collect(events: AsyncIterable<AgentEvent>): Promise<AgentResult> {
   let answer = "";
+  // Where the current run of text starts, which is what a text-replace event replaces.
+  let textRunStart = 0;
   const toolCalls = new Map<string, ToolCallTrace>();
   const guardrails: GuardrailNotice[] = [];
 
@@ -30,7 +32,11 @@ export async function collect(events: AsyncIterable<AgentEvent>): Promise<AgentR
       case "text-delta":
         answer += event.text;
         break;
+      case "text-replace":
+        answer = answer.slice(0, textRunStart) + event.text;
+        break;
       case "tool-call":
+        textRunStart = answer.length;
         toolCalls.set(event.id, {
           name: event.name,
           args: event.args,
@@ -39,6 +45,7 @@ export async function collect(events: AsyncIterable<AgentEvent>): Promise<AgentR
         });
         break;
       case "tool-result": {
+        textRunStart = answer.length;
         const trace = toolCalls.get(event.id);
         if (trace) {
           trace.result = event.result;

@@ -30,7 +30,7 @@ npm run dev                  # http://localhost:3000
 
 ## Try it
 
-Open [localhost:3000](http://localhost:3000) for a small chat page that shows the stream as it arrives: each tool call with its arguments, search hits with their scores, guardrail notices, the finish reason and token usage. Stop cancels the request, which also stops the agent on the server. The answer text appears as one block rather than word by word, because the output guardrails check each complete text block before releasing it (see [Guardrails](#guardrails)). The page ([src/ui/Chat.tsx](src/ui/Chat.tsx)) posts to `/api/agent/chat/stream` and reads the body with `fetch`, since `EventSource` only supports GET; it uses the same SSE parser as the tests ([sseParser.ts](src/http/sseParser.ts)).
+Open [localhost:3000](http://localhost:3000) for a small chat page that shows the stream as it arrives: each tool call with its arguments, search hits with their scores, guardrail notices, the finish reason and token usage. Stop cancels the request, which also stops the agent on the server. The answer is written out as the model generates it; if an output guardrail corrects a finished block, the page swaps in the corrected text and shows the guardrail badge (see [Guardrails](#guardrails)). The page ([src/ui/Chat.tsx](src/ui/Chat.tsx)) posts to `/api/agent/chat/stream` and reads the body with `fetch`, since `EventSource` only supports GET; it uses the same SSE parser as the tests ([sseParser.ts](src/http/sseParser.ts)).
 
 From the command line:
 
@@ -114,14 +114,14 @@ Or open [localhost:3000/docs](http://localhost:3000/docs) for Swagger UI and use
 
 ## API
 
-| Method | Path                     | Input                                      | Response                                                                                                |
-| ------ | ------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/agent/chat`        | `{ "message": string, "history"?: [...] }` | `200 { answer, toolCalls, guardrails, finishReason, usage }`                                            |
-| POST   | `/api/agent/chat/stream` | same                                       | `200 text/event-stream`, events: `tool-call`, `tool-result`, `guardrail`, `text-delta`, `done`, `error` |
-| GET    | `/api/agent/ask?q=`      | query parameter, same rules                | same JSON as `/chat`                                                                                    |
-| GET    | `/api/health`            |                                            | `{ "status": "ok" }`, works without an API key                                                          |
-| GET    | `/api/openapi`           |                                            | OpenAPI 3.1 spec (JSON)                                                                                 |
-| GET    | `/docs`                  |                                            | Swagger UI for the spec                                                                                 |
+| Method | Path                     | Input                                      | Response                                                                                                                |
+| ------ | ------------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/agent/chat`        | `{ "message": string, "history"?: [...] }` | `200 { answer, toolCalls, guardrails, finishReason, usage }`                                                            |
+| POST   | `/api/agent/chat/stream` | same                                       | `200 text/event-stream`, events: `tool-call`, `tool-result`, `guardrail`, `text-delta`, `text-replace`, `done`, `error` |
+| GET    | `/api/agent/ask?q=`      | query parameter, same rules                | same JSON as `/chat`                                                                                                    |
+| GET    | `/api/health`            |                                            | `{ "status": "ok" }`, works without an API key                                                                          |
+| GET    | `/api/openapi`           |                                            | OpenAPI 3.1 spec (JSON)                                                                                                 |
+| GET    | `/docs`                  |                                            | Swagger UI for the spec                                                                                                 |
 
 `message` is 1 to 2000 characters. `history` is optional: the earlier turns, oldest first, as `{ "role": "user" | "assistant", "content": string }`, at most 20 (user turns up to 2000 characters, assistant turns up to 8000). See [Conversations](#design-decisions).
 
@@ -192,7 +192,7 @@ Four guardrails, built with the AI SDK's own extension points, so they apply to 
 
 **The deterministic checks are pure functions** ([secrets.ts](src/guardrails/secrets.ts), [contacts.ts](src/guardrails/contacts.ts), [promptLeak.ts](src/guardrails/promptLeak.ts)), unit tested on their own. The middleware only wires them into the model call. It reads the system prompt and the tool results from the call's own parameters, so it needs nothing passed in.
 
-**Output checks block, they do not stream first.** Each text block of the answer is held back until it is complete, checked, and then released; tool call and tool result events still stream immediately. This follows the default of [OpenAI Guardrails](https://openai.github.io/openai-guardrails-python/streaming_output/) (all checks before showing output, recommended for high assurance) and NeMo Guardrails with [`stream_first: false`](https://docs.nvidia.com/nemo/guardrails/configure-guardrails/yaml-schema/streaming/output-rail-streaming). The alternative, streaming first and retracting, would show an invented phone number before catching it. The cost is small here: in the SSE smoke test before the guardrails existed, generating the answer text took about half a second from first to last token, and that is the delay holding it back adds.
+**Output checks stream first, then correct.** Text is passed on as the model writes it, and each text block is checked once it is complete. If a check changes the block, a `guardrail` event and a `text-replace` event follow, and the client replaces the text since the last tool event with the corrected version; `/chat` returns only the corrected answer, and the model's own history in the loop keeps the corrected text too. This is NeMo Guardrails with [`stream_first: true`](https://docs.nvidia.com/nemo/guardrails/configure-guardrails/yaml-schema/streaming/output-rail-streaming). The first version held each block back until it was checked, the default of [OpenAI Guardrails](https://openai.github.io/openai-guardrails-python/streaming_output/) and NeMo's `stream_first: false`, but then the answer arrived in one piece at the end and the page did not feel like it was streaming. The trade-off is explicit: an invented contact or a copied sentence of the system prompt can be visible for up to the length of one block before it is replaced. In a live run the answer now arrived as 83 pieces over half a second instead of one piece at the end.
 
 **The classifier fails open.** If it errors or takes longer than `GUARDRAIL_TIMEOUT_MS`, the request continues with a `classifier-error` / `allowed` notice, and the deterministic guardrails still apply. An outage of the classifier should not take the helpdesk down.
 
